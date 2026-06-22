@@ -394,6 +394,145 @@
                 padding: 32px 20px;
             }
         }
+
+        /* Estilo do botão de desmarcação */
+        .btn-desmarcar {
+            background-color: var(--danger);
+            color: white;
+            box-shadow: none;
+            margin-top: 12px;
+        }
+
+        .btn-desmarcar:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.mostrar {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--card-radius);
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: var(--text-main);
+        }
+
+        .agendamentos-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .agendamentos-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .agendamentos-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .item-agendamento {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .item-agendamento:hover {
+            border-color: var(--primary);
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .info-agendamento {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: left;
+        }
+
+        .info-agendamento .servico-nome {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .info-agendamento .data-hora {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .btn-cancelar-ag {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-cancelar-ag:hover {
+            background-color: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -452,7 +591,36 @@
             <div id="resumo" class="resumo"></div>
             
             <button class="btn-agendar" onclick="confirmarAgendamento()"><i class="fa-solid fa-check"></i> Confirmar Agendamento</button>
+            <button class="btn-agendar btn-desmarcar" onclick="abrirModalDesmarcar()"><i class="fa-solid fa-calendar-minus"></i> Desmarcar Serviço</button>
             <button class="btn-agendar btn-voltar" onclick="voltarInicio()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+        </div>
+    </div>
+
+    <!-- Modal Desmarcar Serviço -->
+    <div id="modalDesmarcar" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="fecharModalDesmarcar()">&times;</span>
+            <h3 style="font-family: var(--font-title); font-size: 20px; font-weight: 800; margin-bottom: 20px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-calendar-xmark" style="color: var(--danger);"></i> Desmarcar Serviço
+            </h3>
+            
+            <div id="mensagemModal" class="mensagem"></div>
+
+            <!-- Step 1: Inserir Telefone -->
+            <div id="step-busca-telefone">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="telefoneBusca"><i class="fa-solid fa-phone"></i> Seu Telefone Cadastrado</label>
+                    <input type="tel" id="telefoneBusca" placeholder="ex: (31) 98765-4321">
+                </div>
+                <button class="btn-agendar" onclick="buscarAgendamentosCliente()"><i class="fa-solid fa-magnifying-glass"></i> Buscar Agendamentos</button>
+            </div>
+
+            <!-- Step 2: Listar Agendamentos -->
+            <div id="step-lista-agendamentos" style="display: none;">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Selecione o agendamento que deseja desmarcar:</p>
+                <div id="listaAgendamentosContainer" class="agendamentos-list"></div>
+                <button class="btn-agendar btn-voltar" onclick="voltarBuscaTelefone()" style="margin-top: 20px;"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+            </div>
         </div>
     </div>
     
@@ -670,6 +838,143 @@
             setTimeout(() => {
                 div.className = 'mensagem';
             }, 5000);
+        }
+
+        // Lógica do Modal de Desmarcar Serviço
+        function abrirModalDesmarcar() {
+            document.getElementById('modalDesmarcar').classList.add('mostrar');
+            document.getElementById('telefoneBusca').value = '';
+            document.getElementById('mensagemModal').style.display = 'none';
+            voltarBuscaTelefone();
+        }
+
+        function fecharModalDesmarcar() {
+            document.getElementById('modalDesmarcar').classList.remove('mostrar');
+        }
+
+        // Fechar se clicar fora do modal
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('modalDesmarcar');
+            if (event.target === modal) {
+                fecharModalDesmarcar();
+            }
+        });
+
+        function voltarBuscaTelefone() {
+            document.getElementById('step-busca-telefone').style.display = 'block';
+            document.getElementById('step-lista-agendamentos').style.display = 'none';
+            document.getElementById('mensagemModal').style.display = 'none';
+        }
+
+        async function buscarAgendamentosCliente() {
+            const tel = document.getElementById('telefoneBusca').value.trim();
+            if (!tel) {
+                mostrarMensagemModal('Por favor, informe seu telefone.', 'erro');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/buscar_agendamentos_cliente?telefone=${encodeURIComponent(tel)}`);
+                const result = await response.json();
+
+                if (result.erro) {
+                    mostrarMensagemModal(result.erro, 'erro');
+                    return;
+                }
+
+                const agendamentos = result.agendamentos || [];
+                if (agendamentos.length === 0) {
+                    mostrarMensagemModal('Nenhum agendamento futuro encontrado para este telefone.', 'erro');
+                    return;
+                }
+
+                // Renderizar lista
+                const container = document.getElementById('listaAgendamentosContainer');
+                container.innerHTML = '';
+
+                agendamentos.forEach(ag => {
+                    const dataFormatada = new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR');
+                    
+                    const item = document.createElement('div');
+                    item.className = 'item-agendamento';
+                    item.innerHTML = `
+                        <div class="info-agendamento">
+                            <span class="servico-nome">${ag.servico}</span>
+                            <span class="data-hora"><i class="fa-regular fa-calendar"></i> ${dataFormatada} às ${ag.horario}</span>
+                        </div>
+                        <button class="btn-cancelar-ag" onclick="confirmarCancelamentoCliente('${ag.data}', '${ag.horario}', '${ag.telefone}', '${ag.cliente}', '${ag.servico}')">
+                            <i class="fa-solid fa-trash"></i> Cancelar
+                        </button>
+                    `;
+                    container.appendChild(item);
+                });
+
+                document.getElementById('step-busca-telefone').style.display = 'none';
+                document.getElementById('step-lista-agendamentos').style.display = 'block';
+                document.getElementById('mensagemModal').style.display = 'none';
+
+            } catch (error) {
+                console.error('Erro ao buscar agendamentos:', error);
+                mostrarMensagemModal('Erro de conexão ao buscar agendamentos.', 'erro');
+            }
+        }
+
+        async function confirmarCancelamentoCliente(dataAg, horario, telefone, clienteNome, servicoNome) {
+            if (!confirm(`Tem certeza que deseja desmarcar o agendamento de ${servicoNome} no dia ${new Date(dataAg + 'T00:00:00').toLocaleDateString('pt-BR')} às ${horario}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/desmarcar_agendamento_cliente', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        data: dataAg,
+                        horario: horario,
+                        telefone: telefone
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.sucesso) {
+                    mostrarMensagemModal('Agendamento cancelado com sucesso! Redirecionando para o WhatsApp...', 'sucesso');
+                    
+                    // Enviar WhatsApp para o admin informando sobre a desmarcação
+                    const dataFormatada = new Date(dataAg + 'T00:00:00').toLocaleDateString('pt-BR');
+                    const msg = `Olá! Gostaria de desmarcar o seguinte serviço:\n\n` +
+                                `Nome: ${clienteNome}\n` +
+                                `Serviço: ${servicoNome}\n` +
+                                `Telefone: ${telefone}\n` +
+                                `Data: ${dataFormatada}\n` +
+                                `Horário: ${horario}`;
+                                
+                    const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+                    
+                    setTimeout(() => {
+                        window.open(url, '_blank');
+                        fecharModalDesmarcar();
+                        // Se o input de data no form principal estiver na mesma data, recarrega para atualizar os horários
+                        const inputData = document.getElementById('data').value;
+                        if (inputData === dataAg) {
+                            // Dispara change para recarregar horários
+                            document.getElementById('data').dispatchEvent(new Event('change'));
+                        }
+                    }, 2000);
+                } else {
+                    mostrarMensagemModal(result.erro || 'Erro ao desmarcar agendamento.', 'erro');
+                }
+            } catch (error) {
+                console.error('Erro ao desmarcar:', error);
+                mostrarMensagemModal('Erro de conexão ao desmarcar agendamento.', 'erro');
+            }
+        }
+
+        function mostrarMensagemModal(msg, tipo) {
+            const div = document.getElementById('mensagemModal');
+            div.textContent = msg;
+            div.className = `mensagem ${tipo}`;
+            div.style.display = 'block';
         }
         
         // Carregar serviços ao iniciar

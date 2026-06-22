@@ -603,11 +603,126 @@ def admin_cliente_url(url_cliente):
         session['cliente_whatsapp'] = usuario[13]
         session['cliente_url'] = usuario[14]
         
-        # CORRIGIDO: usar URL direta em vez de url_for
         return redirect('/admin/dashboard')
     
     return redirect('/admin/login')
     
+
+@app.route('/api/buscar_agendamentos_cliente')
+def api_buscar_agendamentos_cliente():
+    telefone = request.args.get('telefone')
+    if not telefone:
+        return jsonify({'erro': 'Telefone não informado'}), 400
+    
+    # Limpar telefone do input para comparação (remover parênteses, traços, espaços)
+    tel_limpo = ''.join(c for c in telefone if c.isdigit())
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Buscar cronogramas de hoje para frente
+        cursor.execute("""
+            SELECT DATA, CRONOGRAMA FROM TESTE.AGENDA 
+            WHERE DATA >= CAST(GETDATE() AS DATE)
+            ORDER BY DATA
+        """)
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        agendamentos_encontrados = []
+        for row in rows:
+            data_str = row[0].strftime('%Y-%m-%d')
+            if row[1]:
+                cronograma = json.loads(row[1]) if isinstance(row[1], str) else row[1]
+                agendamentos = cronograma.get('agendamentos', [])
+                for ag in agendamentos:
+                    tel_ag_limpo = ''.join(c for c in ag.get('telefone', '') if c.isdigit())
+                    # Comparação de telefone (se bater o final ou exato para tolerar DDDs ou ddd digitados)
+                    if tel_ag_limpo == tel_limpo or tel_ag_limpo.endswith(tel_limpo) or tel_limpo.endswith(tel_ag_limpo):
+                        servico = ag.get('servico', {})
+                        servico_nome = servico.get('nome') if isinstance(servico, dict) else servico
+                        agendamentos_encontrados.append({
+                            'data': data_str,
+                            'horario': ag.get('horario'),
+                            'cliente': ag.get('cliente'),
+                            'telefone': ag.get('telefone'),
+                            'servico': servico_nome
+                        })
+                        
+        agendamentos_encontrados.sort(key=lambda x: (x['data'], x['horario']))
+        return jsonify({'agendamentos': agendamentos_encontrados})
+    except Exception as e:
+        print(f"Erro ao buscar agendamentos do cliente: {e}")
+        return jsonify({'erro': str(e)}), 500
+
+@app.route('/api/desmarcar_agendamento_cliente', methods=['POST'])
+def api_desmarcar_agendamento_cliente():
+    try:
+        dados = request.json
+        data_ag = dados.get('data')
+        horario = dados.get('horario')
+        telefone = dados.get('telefone')
+        
+        if not all([data_ag, horario, telefone]):
+            return jsonify({'erro': 'Dados incompletos'}), 400
+            
+        tel_limpo = ''.join(c for c in telefone if c.isdigit())
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Buscar cronograma
+        cursor.execute("SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ?", (data_ag,))
+        row = cursor.fetchone()
+        
+        if not row or not row[0]:
+            conn.close()
+            return jsonify({'erro': 'Agenda não encontrada'}), 404
+            
+        cronograma = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+        agendamentos = cronograma.get('agendamentos', [])
+        
+        # Achar o agendamento a ser removido
+        encontrado = None
+        for ag in agendamentos:
+            tel_ag_limpo = ''.join(c for c in ag.get('telefone', '') if c.isdigit())
+            if ag.get('horario') == horario and (tel_ag_limpo == tel_limpo or tel_ag_limpo.endswith(tel_limpo) or tel_limpo.endswith(tel_ag_limpo)):
+                encontrado = ag
+                break
+                
+        if not encontrado:
+            conn.close()
+            return jsonify({'erro': 'Agendamento não encontrado para desmarcar'}), 404
+            
+        # Remover o agendamento
+        agendamentos.remove(encontrado)
+        
+        # Adicionar o horário de volta aos disponíveis (e ordenar)
+        horarios_disp = cronograma.get('horarios_disponiveis', [])
+        if horario not in horarios_disp:
+            horarios_disp.append(horario)
+            horarios_disp.sort()
+            
+        cronograma['agendamentos'] = agendamentos
+        cronograma['horarios_disponiveis'] = horarios_disp
+        
+        # Salvar no banco
+        cursor.execute("""
+            UPDATE TESTE.AGENDA 
+            SET CRONOGRAMA = ?
+            WHERE DATA = ?
+        """, (json.dumps(cronograma), data_ag))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'sucesso': True, 'mensagem': 'Agendamento cancelado com sucesso!'})
+        
+    except Exception as e:
+        print(f"Erro ao desmarcar agendamento: {e}")
+        return jsonify({'erro': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

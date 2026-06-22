@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Clientes | {{ cliente.nome_fantasia }}</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: {{ cores.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cores.cor_secundaria | default('#764ba2') }};
+            --border: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            max-height: 40px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text i {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .welcome-msg {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .welcome-msg strong {
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .logout-btn {
+            background-color: #f43f5e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #e11d48;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 16px 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.01);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+            text-decoration: none;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .toast-message {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 1001;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 16px 24px;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .user-nav {
+                flex-direction: column;
+                width: 100%;
+            }
+            .nav-links {
+                justify-content: center;
+                width: 100%;
+            }
+            th, td {
+                padding: 12px 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            {% if cliente.logo_url %}
+                <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
+            {% else %}
+                <div class="logo-text">
+                    <i class="fa-solid fa-scissors"></i>
+                    <span>{{ cliente.nome_fantasia }}</span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="user-nav">
+            <span class="welcome-msg">Olá, <strong>{{ admin_nome }}</strong></span>
+            
+            <div class="nav-links">
+                <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
+                <a href="/admin/agenda" class="nav-link"><i class="fa-regular fa-calendar-days"></i> Agenda</a>
+                <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-scissors"></i> Serviços</a>
+                <a href="/admin/promocoes" class="nav-link"><i class="fa-solid fa-tags"></i> Promoções</a>
+            </div>
+            
+            <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="panel-title">
+            <i class="fa-solid fa-users"></i> Visualizar Clientes Agendados
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span><i class="fa-solid fa-clipboard-list"></i> Próximos Atendimentos (Hoje em Diante)</span>
+                <button class="btn btn-primary" onclick="carregarAgendamentos()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Telefone</th>
+                            <th>Serviço</th>
+                            <th>Data</th>
+                            <th>Horário</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agendamentosList">
+                        <tr>
+                            <td colspan="6" class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Carregando lista de agendamentos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast-message" style="display: none;"></div>
+    
+    <script>
+        function mostrarMensagem(msg, tipo) {
+            const toast = document.getElementById('toast');
+            toast.style.background = tipo === 'sucesso' ? 'var(--success)' : 'var(--danger)';
+            toast.innerHTML = (tipo === 'sucesso' ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-xmark"></i> ') + msg;
+            toast.style.display = 'flex';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+
+        function formatarWhatsapp(telefone) {
+            let limpo = telefone.replace(/\D/g, '');
+            if (limpo.length === 11 || limpo.length === 10) {
+                limpo = '55' + limpo;
+            }
+            return limpo;
+        }
+
+        function carregarAgendamentos() {
+            fetch('/admin/api/clientes/agendamentos')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        renderizarAgendamentos(data.agendamentos);
+                    } else {
+                        mostrarMensagem('Erro ao carregar agendamentos.', 'erro');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    mostrarMensagem('Erro de conexão com o servidor.', 'erro');
+                });
+        }
+
+        function renderizarAgendamentos(lista) {
+            const tbody = document.getElementById('agendamentosList');
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-message">Nenhum agendamento futuro encontrado.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            lista.forEach(ag => {
+                const tr = document.createElement('tr');
+                const dataFormatada = new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR');
+                
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${ag.cliente}</td>
+                    <td>${ag.telefone}</td>
+                    <td>${ag.servico}</td>
+                    <td>${dataFormatada}</td>
+                    <td style="font-weight: 600; color: var(--primary);">${ag.horario}</td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-danger btn-sm" onclick="cancelarAgendamento('${ag.data}', '${ag.horario}', '${ag.telefone}')">
+                            <i class="fa-solid fa-calendar-xmark"></i> Cancelar Horário
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function cancelarAgendamento(data, horario, telefone) {
+            if (confirm(`Tem certeza de que deseja cancelar o agendamento das ${horario} no dia ${new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')}?`)) {
+                fetch('/admin/api/clientes/cancelar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data, horario, telefone })
+                })
+                .then(response => response.json())
+                .then(res => {
+                    if (res.sucesso) {
+                        mostrarMensagem('Agendamento cancelado com sucesso!', 'sucesso');
+                        carregarAgendamentos();
+                        
+                        // Mandar WhatsApp para o cliente
+                        const numWhats = formatarWhatsapp(telefone);
+                        const msg = encodeURIComponent("Desculpe, não conseguirei atender nesse horário");
+                        window.open(`https://wa.me/${numWhats}?text=${msg}`, '_blank');
+                    } else {
+                        mostrarMensagem(res.erro || 'Erro ao cancelar agendamento.', 'erro');
+                    }
+                })
+                .catch(err => {
+                    console.error('Erro:', err);
+                    mostrarMensagem('Erro de conexão ao cancelar.', 'erro');
+                });
+            }
+        }
+
+        carregarAgendamentos();
+    </script>
+</body>
+</html>

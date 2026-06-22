@@ -358,6 +358,12 @@
                 </a>
                 {% endif %}
                 
+                {% if gerenciar_clientes.get('ativo', false) %}
+                <a href="/admin/clientes" class="nav-link">
+                    <i class="fa-solid fa-users"></i> {{ gerenciar_clientes.get('titulo', 'Clientes') }}
+                </a>
+                {% endif %}
+                
                 {% if imagens_servicos.get('ativo', false) %}
                 <a href="/admin/servicos/imagens" class="nav-link">
                     <i class="fa-solid {{ imagens_servicos.get('icone', 'fa-images') }}"></i> {{ imagens_servicos.get('titulo', 'Imagens') }}
@@ -438,7 +444,7 @@
             {% endif %}
             
             {% if gerenciar_clientes.get('ativo', false) %}
-            <div class="feature-card">
+            <div class="feature-card" onclick="window.location.href='/admin/clientes'">
                 <div class="card-icon">
                     {% if gerenciar_clientes.get('icone') == '👥' or not gerenciar_clientes.get('icone') %}
                         <i class="fa-solid fa-users"></i>
@@ -448,7 +454,7 @@
                 </div>
                 <h3>{{ gerenciar_clientes.get('titulo', 'Gerenciar Clientes') }}</h3>
                 <p>{{ gerenciar_clientes.get('descricao', 'Visualize e gerencie os clientes cadastrados') }}</p>
-                <div class="card-btn">{{ gerenciar_clientes.get('botao', 'Em breve') }}</div>
+                <div class="card-btn">Acessar Clientes</div>
             </div>
             {% endif %}
             

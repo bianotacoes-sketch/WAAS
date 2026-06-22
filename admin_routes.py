@@ -1044,3 +1044,157 @@ def api_excluir_logo():
     if AdminModel.excluir_logo(empresa_id, site_id):
         return jsonify({'sucesso': True})
     return jsonify({'erro': 'Erro ao excluir do banco de dados'}), 500
+
+
+# ==================== ROTAS DE GERENCIAMENTO DE CLIENTES ====================
+
+@admin_bp.route('/clientes')
+def clientes():
+    if 'admin_id' not in session:
+        return redirect(url_for('admin.login'))
+        
+    # Verificar permissão do usuário
+    if session.get('tipo') != 'proprietario':
+        permissoes = AdminModel.buscar_permissoes_usuario(session['admin_id'])
+        if not permissoes.get('gerenciar_clientes', {}).get('ativo', False):
+            return redirect(url_for('admin.dashboard'))
+            
+    cliente_id = session.get('cliente_id')
+    cliente_data = AdminModel.buscar_dados_cliente(cliente_id)
+    if not cliente_data:
+        return redirect(url_for('admin.dashboard'))
+        
+    layout_config = merge_layout_config(cliente_data.get('layout_config'))
+    
+    cliente = {
+        'id': cliente_data['id'],
+        'nome_fantasia': cliente_data['nome_fantasia'],
+        'cor_primaria': cliente_data['cor_primaria'],
+        'cor_secundaria': cliente_data['cor_secundaria'],
+        'cor_terciaria': cliente_data['cor_terciaria'],
+        'logo_url': cliente_data['logo_url'],
+        'whatsapp': cliente_data['whatsapp'],
+        'url_amigavel': cliente_data['url_amigavel'],
+        'layout_config': layout_config
+    }
+    
+    return render_template('admin_clientes.html', 
+                           admin_nome=session['admin_nome'], 
+                           cores=cliente, 
+                           cliente=cliente)
+
+@admin_bp.route('/api/clientes/agendamentos', methods=['GET'])
+def api_clientes_agendamentos():
+    if 'admin_id' not in session:
+        return jsonify({'erro': 'Não autorizado'}), 401
+        
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Obter todos os agendamentos a partir de hoje
+        cursor.execute("""
+            SELECT DATA, CRONOGRAMA FROM TESTE.AGENDA 
+            WHERE DATA >= CAST(GETDATE() AS DATE)
+            ORDER BY DATA
+        """)
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        todos_agendamentos = []
+        for row in rows:
+            data_str = row[0].strftime('%Y-%m-%d')
+            if row[1]:
+                try:
+                    cronograma = json.loads(row[1]) if isinstance(row[1], str) else row[1]
+                    agendamentos = cronograma.get('agendamentos', [])
+                    for ag in agendamentos:
+                        servico = ag.get('servico', {})
+                        servico_nome = servico.get('nome') if isinstance(servico, dict) else servico
+                        todos_agendamentos.append({
+                            'data': data_str,
+                            'horario': ag.get('horario'),
+                            'cliente': ag.get('cliente'),
+                            'telefone': ag.get('telefone'),
+                            'servico': servico_nome
+                        })
+                except Exception as e:
+                    print(f"Erro ao parsear cronograma para data {data_str}: {e}")
+                    
+        # Ordenar os agendamentos por data e horário (crescente)
+        todos_agendamentos.sort(key=lambda x: (x['data'], x['horario']))
+        
+        return jsonify({'sucesso': True, 'agendamentos': todos_agendamentos})
+    except Exception as e:
+        print(f"Erro ao listar agendamentos: {e}")
+        return jsonify({'erro': str(e)}), 500
+
+@admin_bp.route('/api/clientes/cancelar', methods=['POST'])
+def api_clientes_cancelar():
+    if 'admin_id' not in session:
+        return jsonify({'erro': 'Não autorizado'}), 401
+        
+    try:
+        dados = request.json
+        data_ag = dados.get('data')
+        horario = dados.get('horario')
+        telefone = dados.get('telefone')
+        
+        if not all([data_ag, horario, telefone]):
+            return jsonify({'erro': 'Dados incompletos'}), 400
+            
+        tel_limpo = ''.join(c for c in telefone if c.isdigit())
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Buscar cronograma
+        cursor.execute("SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ?", (data_ag,))
+        row = cursor.fetchone()
+        
+        if not row or not row[0]:
+            conn.close()
+            return jsonify({'erro': 'Agenda não encontrada'}), 404
+            
+        cronograma = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+        agendamentos = cronograma.get('agendamentos', [])
+        
+        # Achar o agendamento a ser removido
+        encontrado = None
+        for ag in agendamentos:
+            tel_ag_limpo = ''.join(c for c in ag.get('telefone', '') if c.isdigit())
+            if ag.get('horario') == horario and (tel_ag_limpo == tel_limpo or tel_ag_limpo.endswith(tel_limpo) or tel_limpo.endswith(tel_ag_limpo)):
+                encontrado = ag
+                break
+                
+        if not encontrado:
+            conn.close()
+            return jsonify({'erro': 'Agendamento não encontrado'}), 404
+            
+        # Remover o agendamento
+        agendamentos.remove(encontrado)
+        
+        # Adicionar o horário de volta aos disponíveis (e ordenar)
+        horarios_disp = cronograma.get('horarios_disponiveis', [])
+        if horario not in horarios_disp:
+            horarios_disp.append(horario)
+            horarios_disp.sort()
+            
+        cronograma['agendamentos'] = agendamentos
+        cronograma['horarios_disponiveis'] = horarios_disp
+        
+        # Salvar no banco
+        cursor.execute("""
+            UPDATE TESTE.AGENDA 
+            SET CRONOGRAMA = ?
+            WHERE DATA = ?
+        """, (json.dumps(cronograma), data_ag))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'sucesso': True})
+    except Exception as e:
+        print(f"Erro ao cancelar agendamento pelo admin: {e}")
+        return jsonify({'erro': str(e)}), 500
