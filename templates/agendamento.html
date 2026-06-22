@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendar Horário | {{ cliente.nome_fantasia | default('Salão de Beleza') }}</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: {{ cliente.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cliente.cor_secundaria | default('#764ba2') }};
+            --bg-color: {{ cliente.layout_config.cor_fundo_geral | default('#0f172a') }};
+            --card-bg: {{ cliente.layout_config.cor_cards | default('#1e293b') }};
+            --text-main: {{ cliente.layout_config.cor_texto_principal | default('#f8fafc') }};
+            --text-muted: {{ cliente.layout_config.cor_texto_secundario | default('#94a3b8') }};
+            --border: {{ cliente.layout_config.cor_bordas | default('#334155') }};
+            --success: {{ cliente.layout_config.cor_destaque | default('#10b981') }};
+            --danger: #ef4444;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --danger-bg: rgba(239, 68, 68, 0.1);
+
+            /* Tema dinâmico */
+            --header-bg: {{ cliente.layout_config.cor_fundo_header | default('rgba(30, 41, 59, 0.8)') }};
+            --btn-primary-bg: {{ cliente.layout_config.cor_botao_primario | default('linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)') }};
+            --btn-secondary-bg: {{ cliente.layout_config.cor_botao_secundario | default('transparent') }};
+            --btn-hover-bg: {{ cliente.layout_config.cor_botao_hover | default('linear-gradient(135deg, var(--primary) 10%, var(--secondary) 90%)') }};
+            --btn-radius: {{ cliente.layout_config.border_radius_btn | default('50px') }};
+            --card-radius: {{ cliente.layout_config.border_radius_card | default('24px') }};
+            
+            --font-base: '{{ cliente.layout_config.font_base | default("Inter") }}', sans-serif;
+            --font-title: '{{ cliente.layout_config.font_title | default("Outfit") }}', sans-serif;
+
+            {% if cliente.layout_config.shadow_intensity == 'strong' %}
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 12px 24px -4px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+            {% elif cliente.layout_config.shadow_intensity == 'soft' %}
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+            {% elif cliente.layout_config.shadow_intensity == 'none' %}
+            --shadow-sm: none;
+            --shadow-md: none;
+            --shadow-lg: none;
+            {% else %}
+            --shadow-sm: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-md: 0 8px 16px rgba(0,0,0,0.15);
+            --shadow-lg: 0 16px 32px rgba(0,0,0,0.2);
+            {% endif %}
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-base);
+            background-color: var(--bg-color);
+            {% if cliente.layout_config.bg_type == 'solid' %}
+            background-image: none;
+            {% elif cliente.layout_config.bg_type == 'image' and cliente.layout_config.bg_image_url %}
+            background-image: url('{{ cliente.layout_config.bg_image_url }}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            {% else %}
+            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(118, 75, 162, 0.05) 0%, transparent 40%);
+            {% endif %}
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header / Navbar */
+        .header {
+            background-color: var(--header-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: {{ cliente.layout_config.header_style | default('sticky') }};
+            top: 0;
+            z-index: 100;
+            width: 100%;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            width: 100%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            max-height: 40px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: var(--font-title);
+            color: var(--text-main);
+            letter-spacing: -0.03em;
+        }
+
+        .logo-text .dot {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        /* Card Container */
+        .container {
+            max-width: 640px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--card-radius);
+            padding: 40px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .card h2 {
+            font-family: var(--font-title);
+            font-size: 28px;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: -0.02em;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .card h2 i {
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .form-group label i {
+            color: var(--primary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        }
+
+        .form-group select:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-agendar {
+            width: 100%;
+            padding: 16px;
+            background: var(--btn-primary-bg);
+            color: white;
+            border: none;
+            border-radius: var(--btn-radius);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            margin-top: 12px;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-agendar:hover {
+            transform: translateY(-1px);
+            background: var(--btn-hover-bg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-voltar {
+            background: var(--btn-secondary-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            box-shadow: none;
+            margin-top: 12px;
+        }
+
+        .btn-voltar:hover {
+            border-color: var(--primary);
+            background-color: rgba(99, 102, 241, 0.05);
+            color: var(--primary);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .mensagem {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: none;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .mensagem.sucesso {
+            background-color: var(--success-bg);
+            border: 1px solid var(--success);
+            color: #d1fae5;
+            display: block;
+        }
+
+        .mensagem.erro {
+            background-color: var(--danger-bg);
+            border: 1px solid var(--danger);
+            color: #fecdd3;
+            display: block;
+        }
+
+        .resumo {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: 12px;
+            margin: 24px 0;
+            display: none;
+        }
+
+        .resumo.mostrar {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .resumo h3 {
+            font-family: var(--font-title);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .resumo p {
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .resumo p strong {
+            color: var(--text-main);
+        }
+
+        /* Footer */
+        .footer {
+            background-color: rgba(30, 41, 59, 0.4);
+            border-top: 1px solid var(--border);
+            padding: 32px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: auto;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* WhatsApp Float Button */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #25D366;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+        }
+
+        .whatsapp-float:hover {
+            background-color: #128C7E;
+            transform: scale(1.1) rotate(6deg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .card {
+                padding: 32px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="brand">
+                {% if cliente.logo_url %}
+                    <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
+                {% else %}
+                    <a href="{% if cliente.url_amigavel %}/{{ cliente.url_amigavel }}{% else %}/{% endif %}" class="logo">
+                        <span class="logo-text">{{ cliente.nome_fantasia | default('Salão de Beleza') }}<span class="dot">.</span></span>
+                    </a>
+                {% endif %}
+            </div>
+            <ul class="nav-links">
+                <li><a href="{% if cliente.url_amigavel %}/{{ cliente.url_amigavel }}/agendamento{% else %}/agendamento{% endif %}">Agendar</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2><i class="fa-regular fa-calendar-check"></i> Reserve seu Horário</h2>
+            
+            <div id="mensagem" class="mensagem"></div>
+            
+            <div class="form-group">
+                <label for="nome"><i class="fa-regular fa-user"></i> Seu Nome</label>
+                <input type="text" id="nome" placeholder="Digite seu nome completo">
+            </div>
+            
+            <div class="form-group">
+                <label for="telefone"><i class="fa-solid fa-phone"></i> Telefone para Contato</label>
+                <input type="tel" id="telefone" placeholder="ex: (31) 98765-4321">
+            </div>
+            
+            <div class="form-group">
+                <label for="servico"><i class="fa-solid fa-scissors"></i> Escolha o Serviço</label>
+                <select id="servico" onchange="calcularDuracao()">
+                    <option value="">Selecione um serviço...</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="data"><i class="fa-regular fa-calendar"></i> Escolha a Data</label>
+                <input type="date" id="data">
+            </div>
+            
+            <div class="form-group">
+                <label for="horario"><i class="fa-regular fa-clock"></i> Escolha o Horário</label>
+                <select id="horario" disabled>
+                    <option value="">Selecione primeiro a data...</option>
+                </select>
+            </div>
+            
+            <div id="resumo" class="resumo"></div>
+            
+            <button class="btn-agendar" onclick="confirmarAgendamento()"><i class="fa-solid fa-check"></i> Confirmar Agendamento</button>
+            <button class="btn-agendar btn-voltar" onclick="voltarInicio()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <p>&copy; 2026 {{ cliente.nome_fantasia | default('Salão de Beleza') }}. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- BOTÃO FLUTUANTE WHATSAPP -->
+    {% if cliente.whatsapp and (cliente.layout_config.show_float_whatsapp is not defined or cliente.layout_config.show_float_whatsapp) %}
+    <a href="#" class="whatsapp-float" onclick="abrirWhatsApp(event)" aria-label="Falar pelo WhatsApp">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+    {% endif %}
+    
+    <script>
+        let servicos = [];
+        let horariosDisponiveis = [];
+        
+        // Configurar data mínima (hoje)
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('data').min = hoje;
+        
+        // Número do WhatsApp (formato internacional sem o +)
+        const NUMERO_WHATSAPP = '{{ cliente.whatsapp | default("5531986409761") }}';
+        const MENSAGEM_PADRAO = 'Olá! Gostaria de obter mais informações sobre os horários e serviços.';
+        
+        function abrirWhatsApp(event) {
+            if (event) event.preventDefault();
+            const mensagemCodificada = encodeURIComponent(MENSAGEM_PADRAO);
+            const urlWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensagemCodificada}`;
+            window.open(urlWhatsApp, '_blank');
+        }
+
+        // Carregar serviços do banco
+        async function carregarServicos() {
+            try {
+                const response = await fetch('/api/servicos_cliente');
+                const data = await response.json();
+                
+                if (data.servicos && data.servicos.length > 0) {
+                    servicos = data.servicos;
+                    const select = document.getElementById('servico');
+                    select.innerHTML = '<option value="">Selecione um serviço...</option>';
+                    
+                    servicos.forEach(servico => {
+                        const option = document.createElement('option');
+                        option.value = JSON.stringify(servico);
+                        option.textContent = `${servico.nome} - R$ ${servico.valor.toFixed(2)} (${servico.duracao} min)`;
+                        select.appendChild(option);
+                    });
+                    
+                    // Verificar se existe serviço selecionado no localStorage
+                    const preSelecionado = localStorage.getItem('servicoSelecionado');
+                    if (preSelecionado) {
+                        const serv = JSON.parse(preSelecionado);
+                        // Procurar na lista para marcar
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].value) {
+                                const val = JSON.parse(select.options[i].value);
+                                if (val.id === serv.id) {
+                                    select.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                        localStorage.removeItem('servicoSelecionado');
+                        calcularDuracao();
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao carregar serviços:', error);
+                mostrarMensagem('Erro de conexão ao carregar serviços.', 'erro');
+            }
+        }
+        
+        // Quando a data mudar, buscar horários disponíveis
+        document.getElementById('data').addEventListener('change', async function() {
+            const data = this.value;
+            if (!data) return;
+            
+            const horarioSelect = document.getElementById('horario');
+            horarioSelect.innerHTML = '<option value="">Buscando horários livres...</option>';
+            horarioSelect.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/horarios_disponiveis?data=${data}`);
+                const result = await response.json();
+                
+                if (result.horarios && result.horarios.length > 0) {
+                    horariosDisponiveis = result.horarios;
+                    horarioSelect.innerHTML = '<option value="">Escolha um horário livre...</option>';
+                    
+                    horariosDisponiveis.forEach(horario => {
+                        const option = document.createElement('option');
+                        option.value = horario;
+                        option.textContent = horario;
+                        horarioSelect.appendChild(option);
+                    });
+                    horarioSelect.disabled = false;
+                } else {
+                    horarioSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
+                    horarioSelect.disabled = true;
+                    mostrarMensagem('Nenhum horário disponível para esta data.', 'erro');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar horários:', error);
+                horarioSelect.innerHTML = '<option value="">Erro ao carregar horários</option>';
+                horarioSelect.disabled = true;
+            }
+        });
+        
+        // Calcular duração e atualizar resumo
+        function calcularDuracao() {
+            const servicoSelect = document.getElementById('servico');
+            if (servicoSelect.value) {
+                const servico = JSON.parse(servicoSelect.value);
+                atualizarResumo();
+            }
+        }
+        
+        // Voltar para Home
+        function voltarInicio() {
+            const pathParts = window.location.pathname.split('/');
+            if (pathParts[1] && pathParts[1] !== 'agendamento') {
+                window.location.href = `/${pathParts[1]}`;
+            } else {
+                window.location.href = '/';
+            }
+        }
+        
+        // Atualizar resumo do agendamento
+        function atualizarResumo() {
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const servicoSelect = document.getElementById('servico');
+            const data = document.getElementById('data').value;
+            const horario = document.getElementById('horario').value;
+            const resumoDiv = document.getElementById('resumo');
+            
+            if (nome && telefone && servicoSelect.value && data && horario) {
+                const servico = JSON.parse(servicoSelect.value);
+                resumoDiv.innerHTML = `
+                    <h3><i class="fa-solid fa-clipboard-list"></i> Detalhes da Reserva</h3>
+                    <p><span>Cliente:</span> <strong>${nome}</strong></p>
+                    <p><span>WhatsApp:</span> <strong>${telefone}</strong></p>
+                    <p><span>Serviço:</span> <strong>${servico.nome}</strong></p>
+                    <p><span>Duração Estimada:</span> <strong>${servico.duracao} minutos</strong></p>
+                    <p><span>Investimento:</span> <strong>R$ ${servico.valor.toFixed(2)}</strong></p>
+                    <p><span>Data:</span> <strong>${new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p>
+                    <p><span>Horário:</span> <strong>${horario}</strong></p>
+                `;
+                resumoDiv.classList.add('mostrar');
+            } else {
+                resumoDiv.classList.remove('mostrar');
+            }
+        }
+        
+        // Escutar mudanças nos campos para atualizar resumo
+        document.getElementById('nome').addEventListener('input', atualizarResumo);
+        document.getElementById('telefone').addEventListener('input', atualizarResumo);
+        document.getElementById('servico').addEventListener('change', atualizarResumo);
+        document.getElementById('data').addEventListener('change', atualizarResumo);
+        document.getElementById('horario').addEventListener('change', atualizarResumo);
+        
+        // Confirmar agendamento
+        async function confirmarAgendamento() {
+            const nome = document.getElementById('nome').value.trim();
+            const telefone = document.getElementById('telefone').value.trim();
+            const servicoSelect = document.getElementById('servico');
+            const data = document.getElementById('data').value;
+            const horario = document.getElementById('horario').value;
+            
+            // Validações
+            if (!nome) { mostrarMensagem('Por favor, digite seu nome.', 'erro'); return; }
+            if (!telefone) { mostrarMensagem('Por favor, informe seu telefone.', 'erro'); return; }
+            if (!servicoSelect.value) { mostrarMensagem('Selecione o serviço desejado.', 'erro'); return; }
+            if (!data) { mostrarMensagem('Selecione uma data para o atendimento.', 'erro'); return; }
+            if (!horario) { mostrarMensagem('Escolha o horário para seu atendimento.', 'erro'); return; }
+            
+            const servico = JSON.parse(servicoSelect.value);
+            
+            try {
+                const response = await fetch('/api/agendar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nome: nome,
+                        telefone: telefone,
+                        servico: servico,
+                        data: data,
+                        horario: horario
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.sucesso) {
+                    mostrarMensagem('Agendamento reservado com sucesso!', 'sucesso');
+                    setTimeout(() => {
+                        voltarInicio();
+                    }, 2000);
+                } else {
+                    mostrarMensagem(result.erro || 'Erro ao realizar agendamento.', 'erro');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarMensagem('Erro de conexão ao realizar agendamento.', 'erro');
+            }
+        }
+        
+        function mostrarMensagem(msg, tipo) {
+            const div = document.getElementById('mensagem');
+            div.textContent = msg;
+            div.className = `mensagem ${tipo}`;
+            setTimeout(() => {
+                div.className = 'mensagem';
+            }, 5000);
+        }
+        
+        // Carregar serviços ao iniciar
+        carregarServicos();
+    </script>
+</body>
+</html>

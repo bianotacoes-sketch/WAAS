@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Ofertas | {{ cliente.nome_fantasia }}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: {{ cores.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cores.cor_secundaria | default('#764ba2') }};
+            --border: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text i {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-success:hover { background-color: #059669; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--secondary); }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-inactive { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        .image-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 20px;
+        }
+
+        .image-upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+
+        .image-upload-area i {
+            font-size: 32px;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .image-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .image-preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            border: 1px solid var(--border);
+        }
+
+        .image-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .toast-message {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo-text">
+                <i class="fa-solid fa-house"></i>
+                <span>Gerenciamento de Ofertas - {{ cliente.nome_fantasia }}</span>
+            </div>
+        </div>
+        <div class="nav-links">
+            <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Voltar ao Dashboard</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="panel-title">
+            <div>
+                <i class="fa-solid fa-house"></i> Ofertas / Imóveis
+            </div>
+            <button class="btn btn-primary" onclick="abrirFormulario()"><i class="fa-solid fa-plus"></i> Nova Oferta</button>
+        </div>
+
+        <div id="formContainer" class="card" style="display: none;">
+            <h3 style="margin-bottom: 20px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                <i class="fa-solid fa-pen-to-square"></i> Dados da Oferta
+            </h3>
+            
+            <input type="hidden" id="ofertaId">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Título do Imóvel / Oferta</label>
+                    <input type="text" id="ofertaTitulo" placeholder="Ex: Apartamento 3 Quartos Centro">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Negócio</label>
+                    <select id="ofertaTipoNegocio">
+                        <option value="Venda">Venda</option>
+                        <option value="Aluguel">Aluguel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Imóvel</label>
+                    <select id="ofertaTipoImovel">
+                        <option value="Apartamento">Apartamento</option>
+                        <option value="Apartamento Cobertura">Apartamento Cobertura</option>
+                        <option value="Casa">Casa</option>
+                        <option value="Casa de Condomínio">Casa de Condomínio</option>
+                        <option value="Kitnet">Kitnet</option>
+                        <option value="Terreno">Terreno</option>
+                        <option value="Comercial">Sala Comercial</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="text" id="ofertaValor" placeholder="Ex: 450.000,00">
+                </div>
+                <div class="form-group">
+                    <label>Condomínio (R$)</label>
+                    <input type="text" id="ofertaCondominio" placeholder="Opcional">
+                </div>
+                <div class="form-group">
+                    <label>Área (m²)</label>
+                    <input type="text" id="ofertaArea" placeholder="Ex: 120">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Quartos</label>
+                    <input type="number" id="ofertaQuartos" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Banheiros</label>
+                    <input type="number" id="ofertaBanheiros" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Vagas</label>
+                    <input type="number" id="ofertaVagas" min="0">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mobiliado?</label>
+                    <select id="ofertaMobiliado">
+                        <option value="N">Não</option>
+                        <option value="S">Sim</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Suítes?</label>
+                    <select id="ofertaSuites" onchange="toggleSuitesQtd(this.value)">
+                        <option value="N">Não</option>
+                        <option value="S">Sim</option>
+                    </select>
+                </div>
+                <div class="form-group" id="groupSuitesQtd" style="display: none;">
+                    <label>Quantas Suítes?</label>
+                    <input type="number" id="ofertaSuitesQtd" min="1" value="1">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Duplex?</label>
+                    <select id="ofertaDuplex">
+                        <option value="NA">Não se aplica</option>
+                        <option value="S">Sim</option>
+                        <option value="N">Não</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Triplex?</label>
+                    <select id="ofertaTriplex">
+                        <option value="NA">Não se aplica</option>
+                        <option value="S">Sim</option>
+                        <option value="N">Não</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Próximo ao Metrô?</label>
+                    <select id="ofertaProximoMetro">
+                        <option value="N">Não</option>
+                        <option value="S">Sim</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Endereço Completo / Localização</label>
+                <input type="text" id="ofertaEndereco" placeholder="Rua, Bairro, Cidade - UF">
+            </div>
+
+            <div class="form-group">
+                <label>Descrição Detalhada</label>
+                <textarea id="ofertaDescricao" placeholder="Descreva os diferenciais do imóvel..."></textarea>
+            </div>
+
+            <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                <input type="checkbox" id="ofertaAtivo" checked style="width: 20px; height: 20px;">
+                <label for="ofertaAtivo" style="margin: 0; font-size: 14px;">Oferta Ativa (Visível no site)</label>
+            </div>
+
+            <h3 style="margin: 30px 0 20px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                <i class="fa-solid fa-camera"></i> Galeria de Imagens (Máx: 30 fotos)
+            </h3>
+
+            <div class="image-upload-area" onclick="document.getElementById('fileInput').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <p style="font-weight: 600; margin-bottom: 5px;">Clique aqui para selecionar as imagens</p>
+                <p style="font-size: 13px; color: var(--text-muted);">As imagens serão salvas automaticamente quando a oferta for salva.</p>
+                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+            </div>
+            
+            <div id="imagePreviewContainer" class="image-preview-grid"></div>
+
+            <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-danger" onclick="fecharFormulario()">Cancelar</button>
+                <button class="btn btn-success" onclick="salvarOferta()"><i class="fa-solid fa-floppy-disk"></i> Salvar Oferta Completa</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-list"></i> Ofertas Cadastradas</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Tipo</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ofertasTableBody">
+                        <tr><td colspan="6" style="text-align: center;">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast-message" style="display: none;"></div>
+
+    <script>
+        let ofertas = [];
+        let arquivosSelecionados = [];
+
+        function mostrarMensagem(msg, tipo) {
+            const toast = document.getElementById('toast');
+            toast.style.background = tipo === 'sucesso' ? 'var(--success)' : 'var(--danger)';
+            toast.innerHTML = (tipo === 'sucesso' ? '<i class="fa-solid fa-check"></i> ' : '<i class="fa-solid fa-xmark"></i> ') + msg;
+            toast.style.display = 'flex';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+
+        function carregarOfertas() {
+            fetch('/admin/api/imobiliaria/ofertas')
+                .then(res => res.json())
+                .then(data => {
+                    if(data.sucesso) {
+                        ofertas = data.ofertas;
+                        renderizarTabela();
+                    }
+                });
+        }
+
+        function renderizarTabela() {
+            const tbody = document.getElementById('ofertasTableBody');
+            if(ofertas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhuma oferta cadastrada.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            ofertas.forEach(oferta => {
+                const dados = oferta.dados || {};
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${oferta.id}</td>
+                    <td><strong>${dados.titulo || 'Sem Título'}</strong></td>
+                    <td>${dados.tipo_negocio || '-'} / ${dados.tipo_imovel || '-'}</td>
+                    <td>R$ ${dados.valor || '0,00'}</td>
+                    <td><span class="status-badge ${oferta.ativo ? 'status-active' : 'status-inactive'}">${oferta.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                    <td>
+                        <button class="btn btn-primary" style="padding: 6px 10px; font-size: 12px;" onclick="editarOferta(${oferta.id})"><i class="fa-solid fa-pen"></i> Editar</button>
+                        <button class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;" onclick="excluirOferta(${oferta.id})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function abrirFormulario() {
+            document.getElementById('formContainer').style.display = 'block';
+            document.getElementById('ofertaId').value = '';
+            document.getElementById('ofertaTitulo').value = '';
+            document.getElementById('ofertaValor').value = '';
+            document.getElementById('ofertaCondominio').value = '';
+            document.getElementById('ofertaArea').value = '';
+            document.getElementById('ofertaQuartos').value = '';
+            document.getElementById('ofertaBanheiros').value = '';
+            document.getElementById('ofertaVagas').value = '';
+            document.getElementById('ofertaEndereco').value = '';
+            document.getElementById('ofertaDescricao').value = '';
+            document.getElementById('ofertaMobiliado').value = 'N';
+            document.getElementById('ofertaSuites').value = 'N';
+            document.getElementById('ofertaSuitesQtd').value = '1';
+            document.getElementById('groupSuitesQtd').style.display = 'none';
+            document.getElementById('ofertaDuplex').value = 'NA';
+            document.getElementById('ofertaTriplex').value = 'NA';
+            document.getElementById('ofertaProximoMetro').value = 'N';
+            document.getElementById('ofertaAtivo').checked = true;
+            arquivosSelecionados = [];
+            document.getElementById('imagePreviewContainer').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function fecharFormulario() {
+            document.getElementById('formContainer').style.display = 'none';
+        }
+
+        function toggleSuitesQtd(val) {
+            const group = document.getElementById('groupSuitesQtd');
+            if (val === 'S') {
+                group.style.display = 'block';
+            } else {
+                group.style.display = 'none';
+                document.getElementById('ofertaSuitesQtd').value = '1';
+            }
+        }
+
+        function editarOferta(id) {
+            const oferta = ofertas.find(o => o.id === id);
+            if(!oferta) return;
+            
+            const dados = oferta.dados || {};
+            
+            abrirFormulario();
+            document.getElementById('ofertaId').value = oferta.id;
+            document.getElementById('ofertaTitulo').value = dados.titulo || '';
+            document.getElementById('ofertaTipoNegocio').value = dados.tipo_negocio || 'Venda';
+            document.getElementById('ofertaTipoImovel').value = dados.tipo_imovel || 'Apartamento';
+            document.getElementById('ofertaValor').value = dados.valor || '';
+            document.getElementById('ofertaCondominio').value = dados.condominio || '';
+            document.getElementById('ofertaArea').value = dados.area || '';
+            document.getElementById('ofertaQuartos').value = dados.quartos || '';
+            document.getElementById('ofertaBanheiros').value = dados.banheiros || '';
+            document.getElementById('ofertaVagas').value = dados.vagas || '';
+            document.getElementById('ofertaEndereco').value = dados.endereco || '';
+            document.getElementById('ofertaDescricao').value = dados.descricao || '';
+            document.getElementById('ofertaMobiliado').value = dados.mobiliado || 'N';
+            document.getElementById('ofertaSuites').value = dados.suites || 'N';
+            document.getElementById('ofertaSuitesQtd').value = dados.suites_qtd || '1';
+            document.getElementById('groupSuitesQtd').style.display = dados.suites === 'S' ? 'block' : 'none';
+            document.getElementById('ofertaDuplex').value = dados.duplex || 'NA';
+            document.getElementById('ofertaTriplex').value = dados.triplex || 'NA';
+            document.getElementById('ofertaProximoMetro').value = dados.proximo_metro || 'N';
+            document.getElementById('ofertaAtivo').checked = oferta.ativo;
+            
+            // Carregar imagens existentes com opção de exclusão
+            renderizarImagensExistentesOferta(oferta);
+        }
+
+        function renderizarImagensExistentesOferta(oferta) {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            
+            if (oferta.imagens_ids && oferta.imagens_ids.length > 0) {
+                oferta.imagens_ids.forEach(idx => {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    div.style.position = 'relative';
+                    
+                    const imgUrl = `/img/oferta/${oferta.id}/${idx}`;
+                    
+                    div.innerHTML = `
+                        <img src="${imgUrl}" alt="Foto ${idx}">
+                        <button onclick="excluirImagemOferta(event, ${oferta.id}, ${idx})" style="position: absolute; top: 4px; right: 4px; background: rgba(239, 68, 68, 0.9); border: none; border-radius: 50%; color: white; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px;" title="Excluir imagem">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        function excluirImagemOferta(event, ofertaId, idx) {
+            event.stopPropagation();
+            if (confirm('Tem certeza que deseja excluir esta imagem da oferta?')) {
+                fetch(`/admin/api/imobiliaria/ofertas/${ofertaId}/imagens/${idx}`, {
+                    method: 'DELETE'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        mostrarMensagem('Imagem excluída com sucesso!', 'sucesso');
+                        // Recarregar a lista de ofertas para atualizar a lista local de imagens
+                        fetch('/admin/api/imobiliaria/ofertas')
+                            .then(res => res.json())
+                            .then(dataList => {
+                                if(dataList.sucesso) {
+                                    ofertas = dataList.ofertas;
+                                    renderizarTabela();
+                                    // Re-renderizar as fotos da oferta atual
+                                    const ofertaAtualizada = ofertas.find(o => o.id === ofertaId);
+                                    if (ofertaAtualizada) {
+                                        renderizarImagensExistentesOferta(ofertaAtualizada);
+                                    }
+                                }
+                            });
+                    } else {
+                        mostrarMensagem('Erro ao excluir imagem.', 'erro');
+                    }
+                });
+            }
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const maxAllowed = 30;
+            
+            if(files.length + arquivosSelecionados.length > maxAllowed) {
+                mostrarMensagem('O limite máximo é de 30 imagens.', 'erro');
+                return;
+            }
+
+            for(let i=0; i<files.length; i++) {
+                arquivosSelecionados.push(files[i]);
+            }
+            
+            renderizarPreviewImagens();
+        }
+
+        function renderizarPreviewImagens() {
+            const container = document.getElementById('imagePreviewContainer');
+            
+            // Re-renderizar imagens existentes primeiro
+            const id = document.getElementById('ofertaId').value;
+            if (id) {
+                const oferta = ofertas.find(o => o.id === parseInt(id));
+                if (oferta) {
+                    renderizarImagensExistentesOferta(oferta);
+                }
+            } else {
+                container.innerHTML = '';
+            }
+            
+            // Anexar visualizações dos novos arquivos
+            arquivosSelecionados.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    div.innerHTML = `<img src="${e.target.result}" alt="Preview" style="opacity: 0.7; border: 2px dashed var(--primary);">`;
+                    container.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function salvarOferta() {
+            const id = document.getElementById('ofertaId').value;
+            const titulo = document.getElementById('ofertaTitulo').value;
+            if(!titulo) {
+                mostrarMensagem('O título é obrigatório.', 'erro');
+                return;
+            }
+
+            const dados = {
+                titulo: titulo,
+                tipo_negocio: document.getElementById('ofertaTipoNegocio').value,
+                tipo_imovel: document.getElementById('ofertaTipoImovel').value,
+                valor: document.getElementById('ofertaValor').value,
+                condominio: document.getElementById('ofertaCondominio').value,
+                area: document.getElementById('ofertaArea').value,
+                quartos: document.getElementById('ofertaQuartos').value,
+                banheiros: document.getElementById('ofertaBanheiros').value,
+                vagas: document.getElementById('ofertaVagas').value,
+                endereco: document.getElementById('ofertaEndereco').value,
+                descricao: document.getElementById('ofertaDescricao').value,
+                mobiliado: document.getElementById('ofertaMobiliado').value,
+                suites: document.getElementById('ofertaSuites').value,
+                suites_qtd: document.getElementById('ofertaSuites').value === 'S' ? parseInt(document.getElementById('ofertaSuitesQtd').value) || 1 : 0,
+                duplex: document.getElementById('ofertaDuplex').value,
+                triplex: document.getElementById('ofertaTriplex').value,
+                proximo_metro: document.getElementById('ofertaProximoMetro').value
+            };
+
+            const payload = {
+                id: id ? parseInt(id) : null,
+                dados: dados,
+                ativo: document.getElementById('ofertaAtivo').checked
+            };
+
+            // Mostrar loading
+            mostrarMensagem('Salvando dados...', 'sucesso');
+
+            fetch('/admin/api/imobiliaria/ofertas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.sucesso) {
+                    const ofertaId = data.id || id;
+                    
+                    // Se houver imagens, fazer upload
+                    if(arquivosSelecionados.length > 0) {
+                        const formData = new FormData();
+                        arquivosSelecionados.forEach((file, index) => {
+                            formData.append(`imagem${index+1}`, file);
+                        });
+                        
+                        mostrarMensagem('Fazendo upload de ' + arquivosSelecionados.length + ' imagens...', 'sucesso');
+                        
+                        fetch(`/admin/api/imobiliaria/ofertas/${ofertaId}/imagens`, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(imgData => {
+                            if(imgData.sucesso) {
+                                mostrarMensagem('Oferta e imagens salvas com sucesso!', 'sucesso');
+                                fecharFormulario();
+                                carregarOfertas();
+                            } else {
+                                mostrarMensagem('A oferta foi salva, mas ocorreu um erro no upload de imagens.', 'erro');
+                            }
+                        });
+                    } else {
+                        mostrarMensagem('Oferta salva com sucesso!', 'sucesso');
+                        fecharFormulario();
+                        carregarOfertas();
+                    }
+                } else {
+                    mostrarMensagem(data.erro || 'Erro ao salvar oferta.', 'erro');
+                }
+            });
+        }
+
+        function excluirOferta(id) {
+            if(confirm('Tem certeza que deseja excluir permanentemente esta oferta e todas as suas imagens?')) {
+                fetch(`/admin/api/imobiliaria/ofertas/${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.sucesso) {
+                            mostrarMensagem('Oferta excluída com sucesso!', 'sucesso');
+                            carregarOfertas();
+                        } else {
+                            mostrarMensagem('Erro ao excluir oferta.', 'erro');
+                        }
+                    });
+            }
+        }
+
+        // Init
+        carregarOfertas();
+    </script>
+</body>
+</html>

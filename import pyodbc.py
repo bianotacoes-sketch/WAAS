@@ -1,0 +1,835 @@
+import pyodbc
+import pandas as pd
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+import traceback
+
+# Credenciais
+connection_string = (
+    "Driver={ODBC Driver 17 for SQL Server};"
+    "Server=134.65.243.58,1433;"
+    "Database=SANKHYA_PROD;"
+    "UID=sankhya;"
+    "PWD=h4xg7s3f;"
+)
+
+# Nome do script para o log
+NOME_SCRIPT = "extracao_passivo_trabalhista_materdei"
+
+# Caminho corrigido do CSV (RAW STRING)
+CAMINHO_CSV = r"Y:\PLANEJAMENTO - BI\resultado_passivo_trabalhista.csv"
+
+# (Aqui vem o seu SQL_TEMPLATE, igual ao que você já tem)
+sql_template = """WITH 
+
+PARAMETRO AS (
+    SELECT 
+        CONVERT(DATETIME, '{data_param}', 103) AS DATA_PARAM,
+        'Trabalhado' AS TIPO_AVISO_PREVIO
+),
+
+DATA_REFERENCIA AS (
+    SELECT 
+        FUN.CODEMP,
+        FUN.CODFUNC,
+        CASE 
+            WHEN AVI.CODFUNC IS NOT NULL AND (SELECT DATA_PARAM FROM PARAMETRO) > AVI.DTFIMAVISO THEN AVI.DTFIMAVISO
+            ELSE (SELECT DATA_PARAM FROM PARAMETRO)
+        END AS DATA_REF
+    FROM TFPFUN FUN
+    LEFT JOIN TFPAVI AVI ON AVI.CODFUNC = FUN.CODFUNC AND AVI.CODEMP = FUN.CODEMP
+    WHERE FUN.SITUACAO <> 0
+),
+
+FERIAS AS (
+    SELECT 
+        DTINIAQUI,
+        DTFINAQUI,
+        DTPREVISTA,
+        DTSAIDA,
+        ATUALFERGOZ,
+        CODFUNC,
+        CODEMP,
+        NUMDIASFER,
+        DENSE_RANK() OVER (PARTITION BY CODFUNC, CODEMP ORDER BY DTFINAQUI DESC) AS SEQUENCIA
+    FROM TFPFER
+    WHERE DTSAIDA is null
+),
+
+TB_MEDIA AS (
+    SELECT 
+        ACU.CODEMP,
+        ACU.CODFUNC,
+        ACU.ANO,
+        ACU.CODEVENTO,
+        EVE.DESCREVENTO,
+        VLRJANEIRO AS MES_01,
+        VLRFEVEREIRO AS MES_02,
+        VLRMARCO AS MES_03,
+        VLRABRIL AS MES_04,
+        VLRMAIO AS MES_05,
+        VLRJUNHO AS MES_06,
+        VLRJULHO AS MES_07,
+        VLRAGOSTO AS MES_08,
+        VLRSETEMBRO AS MES_09,
+        VLROUTUBRO AS MES_10,
+        VLRNOVEMBRO AS MES_11,
+        VLRDEZEMBRO AS MES_12
+    FROM TFPACU ACU
+    LEFT JOIN TFPEVE EVE ON (EVE.CODEVENTO = ACU.CODEVENTO)
+    LEFT JOIN TFPFUN FUN ON FUN.CODEMP = ACU.CODEMP AND FUN.CODFUNC = ACU.CODFUNC
+    WHERE EVE.INCSOBREMEDIAS = 'S'
+),
+
+UNPVTMEDIA AS (
+    SELECT 
+        CODEMP,
+        CODFUNC,
+        ANO,
+        CODEVENTO,
+        DESCREVENTO,
+        MES,
+        VALOR
+    FROM TB_MEDIA P
+    UNPIVOT(VALOR FOR MES IN (MES_01, MES_02, MES_03, MES_04, MES_05, MES_06,
+                            MES_07, MES_08, MES_09, MES_10, MES_11, MES_12)) AS UNPVT
+),
+
+MEDIA AS (
+    SELECT 
+        CODEMP,
+        CODFUNC,
+        ANO,
+        CODEVENTO,
+        DESCREVENTO,
+        VALOR,
+        CAST(RIGHT(MES,2) AS INT) AS MES,
+        DATEFROMPARTS(ANO, CAST(RIGHT(MES,2) AS INT), 1) AS REFERENCIA 
+    FROM UNPVTMEDIA
+),
+
+ULTPERAQUI AS (
+    SELECT DISTINCT
+        CODFUNC,
+        CODEMP,
+        MAX(DTINIAQUI) AS INI_ULT_PER_AQUI
+    FROM FERIAS
+    WHERE ATUALFERGOZ = 'S' AND DTSAIDA IS NOT NULL
+    GROUP BY CODFUNC, CODEMP
+),
+
+INIPERAQUI AS (
+    SELECT 
+        f.DTADM,
+        fe.CODFUNC,
+        fe.CODEMP,
+        MAX(DTINIAQUI) AS INI_PERIODO_AQUISITIVO,
+        SUM(NUMDIASFER) AS NUMDIASFER
+    FROM FERIAS fe
+    JOIN TFPFUN f on f.CODFUNC = fe.CODFUNC and f.CODEMP = fe.codemp
+    WHERE SEQUENCIA = 1
+    GROUP BY fe.CODFUNC, fe.CODEMP, f.DTADM
+),
+
+MD1 AS (
+    SELECT 
+        MED.CODEMP,
+        MED.CODFUNC,
+        SUM(VALOR) AS VALOR
+    FROM MEDIA MED
+    LEFT JOIN INIPERAQUI INI ON INI.CODEMP = MED.CODEMP AND INI.CODFUNC = MED.CODFUNC
+    WHERE MED.REFERENCIA >= DATEFROMPARTS(YEAR(INI_PERIODO_AQUISITIVO), MONTH(INI_PERIODO_AQUISITIVO), 1)
+    GROUP BY MED.CODEMP, MED.CODFUNC
+),
+
+SALDO_FGTS AS (
+    SELECT 
+        FOL.CODEMP,
+        FOL.CODFUNC,
+        SUM(FOL.VLREVENTO) AS SALDO_SANKHYA_FGTS
+    FROM TFPFOL FOL
+    INNER JOIN TFPFUN FUN ON FUN.CODEMP = FOL.CODEMP AND FUN.CODFUNC = FOL.CODFUNC
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = FUN.CODEMP AND DR.CODFUNC = FUN.CODFUNC
+    WHERE FOL.CODEVENTO = 995
+      AND FOL.REFERENCIA <= CASE 
+                               WHEN FUN.DTDEM IS NOT NULL THEN FUN.DTDEM
+                               ELSE DR.DATA_REF
+                            END
+    GROUP BY FOL.CODEMP, FOL.CODFUNC
+),
+
+FGTS_MES AS (
+    SELECT 
+        CODEMP,
+        CODFUNC,
+        REFERENCIA,
+        SUM(VLREVENTO) AS FGTSMES
+    FROM TFPFOL
+    WHERE CODEVENTO = 995
+    GROUP BY CODEMP, CODFUNC, REFERENCIA
+),
+
+COMP_SALDO AS (
+    SELECT 
+        CODEMP,
+        CODFUNC,
+        REFERENCIA,
+        SUM(VLREVENTO) AS COMPSALDO
+    FROM TFPFOL
+    WHERE CODEVENTO IN (17, 22, 23, 24, 25, 46, 50, 53, 61, 80, 87, 90, 93, 101, 125, 128, 150, 151, 152,
+                       540, 541, 552, 10000, 10001, 10002, 10003, 10011, 10017, 10020, 10023, 10024, 10029,
+                       10035, 10056, 10057, 10065, 10090, 10101, 10103, 10109, 10145)
+    GROUP BY CODEMP, CODFUNC, REFERENCIA
+),
+
+ULTIMA_REFERENCIA AS (
+    SELECT 
+        CODEMP,
+        CODFUNC,
+        MAX(REFERENCIA) AS REFERENCIA
+    FROM TFPHFU
+    GROUP BY CODEMP, CODFUNC
+),
+
+ULTIMO_SAL_BASE AS (
+    SELECT
+        UTR.CODEMP,
+        UTR.CODFUNC,
+        SALBASE
+    FROM TFPHFU HFU
+    INNER JOIN ULTIMA_REFERENCIA UTR ON UTR.REFERENCIA = HFU.REFERENCIA AND UTR.CODEMP = HFU.CODEMP AND UTR.CODFUNC = HFU.CODFUNC
+),
+
+COLABORADORES AS (
+    SELECT
+        FUN.CODEMP,
+        FUN.CPF,
+        FUN.VINCULO,
+        FUN.CODFUNC,
+        FUN.NOMEFUNC,
+        FUN.DTADM,
+        FUN.DTDEM,
+        p.DATA_PARAM,
+        INI_PERIODO_AQUISITIVO,
+        fun.situacao,
+        CASE
+            WHEN FUN.DTADM < DATEADD(MONTH, -12, ISNULL(FUN.DTDEM, DR.DATA_REF)) THEN DATEADD(MONTH, -12, ISNULL(FUN.DTDEM, DR.DATA_REF))
+            ELSE FUN.DTADM 
+        END AS REFERENCIA_DECTER,
+        DATEFROMPARTS(YEAR(ISNULL(FUN.DTDEM, DR.DATA_REF)), MONTH(ISNULL(FUN.DTDEM, DR.DATA_REF)), 1) AS REFERENCIA,
+        COALESCE(HISTFUN.CODDEP, FUN.CODDEP) AS CODDEP,
+        COALESCE(HISTFUN.CODCARGO, FUN.CODCARGO) AS CODCARGO,
+        CAR.DESCRCARGO,
+        case when  DAY(DATA_PARAM) = 31 then 30 
+        when MONTH(data_param) =2 and DAY(DATA_PARAM) = 28 then 30 
+        else DAY(DATA_PARAM)
+        end DIAS_SALDO_SALARIO, 
+        COALESCE(FUN.AD_SALDOFGTS, 0) AS SALDO_ANTERIOR_FGTS,
+        COALESCE(HISTFUN.SALBASE, FUN.SALBASE) AS SALBASE,
+        CASE 
+            WHEN month(FUN.DTADM)>=month(P.DATA_PARAM) and day(FUN.DTADM)>=day(P.DATA_PARAM) then
+                (30 + (DATEDIFF(YEAR, FUN.DTADM, P.DATA_PARAM) * 3)) * COALESCE(HISTFUN.SALBASE, FUN.SALBASE) / 30
+            ELSE
+                (30 + ((DATEDIFF(YEAR, FUN.DTADM, P.DATA_PARAM) - 1) * 3)) * COALESCE(HISTFUN.SALBASE, FUN.SALBASE) / 30
+        END AS AVISO_PREVIO_INDENIZADO,
+        case when month(FUN.DTADM)>=month(P.DATA_PARAM) and day(FUN.DTADM)>=day(P.DATA_PARAM) then
+            30 + (datediff(YEAR,FUN.DTADM,P.DATA_PARAM)*3) 
+        when month(FUN.DTADM)<month(P.DATA_PARAM) or day(FUN.DTADM)<day(P.DATA_PARAM) then
+            30 + (datediff(YEAR,FUN.DTADM,P.DATA_PARAM)-1)*3
+        end DIAS_AVISO_INDENIZADO,
+        ROUND((COALESCE(HISTFUN.SALBASE, FUN.SALBASE) / 12) * 
+            ((CASE WHEN (CASE WHEN DAY(ISNULL(FUN.DTDEM, DR.DATA_REF)) = DAY(EOMONTH(ISNULL(FUN.DTDEM, DR.DATA_REF))) THEN 30 ELSE DAY(ISNULL(FUN.DTDEM, DR.DATA_REF)) END) >= 15 THEN 1 ELSE 0 END) - 
+            (CASE WHEN YEAR(FUN.DTADM) < YEAR(ISNULL(FUN.DTDEM, DR.DATA_REF)) THEN 0 
+                ELSE (CASE WHEN (CASE WHEN DAY(FUN.DTADM) = DAY(EOMONTH(FUN.DTADM)) THEN 30 ELSE DAY(FUN.DTADM) END) >= 15 THEN 1 ELSE 0 END) 
+            END) + 
+            (DATEDIFF(MONTH, CASE WHEN FUN.DTADM > DATEFROMPARTS(YEAR(ISNULL(FUN.DTDEM, DR.DATA_REF)), 1, 1) THEN FUN.DTADM ELSE DATEFROMPARTS(YEAR(ISNULL(FUN.DTDEM, DR.DATA_REF)), 1, 1) END, 
+            ISNULL(FUN.DTDEM, DR.DATA_REF)))), 2) AS DECTERSALARIO,
+        COALESCE(CASE 
+            when datediff(year,ini.dtadm,ISNULL(FUN.DTDEM, DR.DATA_REF))=0 then 0
+            when INI.DTADM = INI_PERIODO_AQUISITIVO AND DR.DATA_REF < DATEADD(YEAR,1,INI.DTADM)    THEN 0
+            WHEN ISNULL(FUN.DTDEM, DR.DATA_REF) < INI_PERIODO_AQUISITIVO THEN 0 
+            ELSE  INI.NUMDIASFER
+        END, 0) AS DIAS_FERIAS_VENCIDAS,
+        CASE 
+            WHEN DATEDIFF(MONTH, INI_PERIODO_AQUISITIVO, ISNULL(FUN.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE MD1.VALOR / DATEDIFF(MONTH, INI_PERIODO_AQUISITIVO, ISNULL(FUN.DTDEM, DR.DATA_REF)) / 30 * (30 + (FLOOR(DATEDIFF(DAY, FUN.DTADM, ISNULL(FUN.DTDEM, DR.DATA_REF)) / 365) * 3))
+        END AS MEDIA_AVISO_PREVIO_INDENIZADO,
+        COALESCE(HISTFUN.SALBASE, FUN.SALBASE) / 30 * (30 + (FLOOR(DATEDIFF(DAY, FUN.DTADM, ISNULL(FUN.DTDEM, DR.DATA_REF)) / 365) * 3)) / 12 * ROUND((30 + (FLOOR(DATEDIFF(DAY, FUN.DTADM, ISNULL(FUN.DTDEM, DR.DATA_REF)) / 365) * 3)) / 30, 0) AS DECTER_API 
+    FROM TFPFUN FUN 
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = FUN.CODEMP AND DR.CODFUNC = FUN.CODFUNC
+    LEFT JOIN TFPHFU HISTFUN ON FUN.CODFUNC = HISTFUN.CODFUNC AND FUN.CODEMP = HISTFUN.CODEMP
+        AND HISTFUN.REFERENCIA = (SELECT MAX(REFERENCIA) FROM TFPHFU                                
+                                 WHERE CODEMP = FUN.CODEMP AND CODFUNC = FUN.CODFUNC 
+                                 AND REFERENCIA <= ISNULL(FUN.DTDEM, DR.DATA_REF))
+    LEFT JOIN TFPCAR CAR ON CAR.CODCARGO = COALESCE(HISTFUN.CODCARGO, FUN.CODCARGO)
+    LEFT JOIN TFPDEP DEP ON DEP.CODDEP = COALESCE(HISTFUN.CODDEP, FUN.CODDEP)
+    LEFT JOIN INIPERAQUI INI ON FUN.CODFUNC = INI.CODFUNC AND FUN.CODEMP = INI.CODEMP
+    LEFT JOIN MD1 ON MD1.CODEMP = FUN.CODEMP AND MD1.CODFUNC = FUN.CODFUNC
+    CROSS JOIN PARAMETRO p
+    WHERE FUN.situacao <> 0
+    AND FUN.VINCULO in (2,10,30,40,50,60,55)  
+    AND FUN.DTADM <= DATA_PARAM 
+    AND FUN.CODDEP = 20603700
+),
+
+BASE_FERIAS_VENCIDAS AS (
+    SELECT 
+        codemp,
+        codfunc,
+        DATEDIFF(year, INI_PERIODO_AQUISITIVO, DATA_PARAM) as Anos,
+        CASE 
+            WHEN day(INI_PERIODO_AQUISITIVO) = DAY(DATA_PARAM) and month(INI_PERIODO_AQUISITIVO) = MONTH(DATA_PARAM) 
+            THEN DATEDIFF(year, INI_PERIODO_AQUISITIVO, DATA_PARAM)
+            ELSE DATEDIFF(year, INI_PERIODO_AQUISITIVO, DATA_PARAM) - 1  
+        END as Anos_Acrescentar,
+        CASE 
+            WHEN day(INI_PERIODO_AQUISITIVO) = DAY(DATA_PARAM) and month(INI_PERIODO_AQUISITIVO) = MONTH(DATA_PARAM) 
+            THEN DATEDIFF(year, INI_PERIODO_AQUISITIVO, DATA_PARAM) *30
+            ELSE (DATEDIFF(year, INI_PERIODO_AQUISITIVO, DATA_PARAM) - 1 )*30
+        END dias_ferias_vencidas_sem_tirar,
+        INI_PERIODO_AQUISITIVO
+    FROM COLABORADORES
+    WHERE DATEDIFF(day, INI_PERIODO_AQUISITIVO, DATA_PARAM) >= 365
+),
+
+NUMBERS AS (
+    SELECT 0 as n
+    UNION ALL
+    SELECT n + 1
+    FROM NUMBERS
+    WHERE n < 20
+),
+
+PERIODOS_AQUISITIVOS AS (
+    SELECT DISTINCT
+        B.codemp,
+        B.codfunc,
+        B.Anos,
+        B.Anos_Acrescentar,
+        DATEADD(YEAR, N.n, B.INI_PERIODO_AQUISITIVO) as INI_PERIODO_AQUISITIVO,
+        N.n as ano_offset
+    FROM BASE_FERIAS_VENCIDAS B
+    CROSS JOIN NUMBERS N
+    WHERE N.n BETWEEN 0 AND B.Anos_Acrescentar
+),
+
+AFASTADOS AS (
+    SELECT 
+        afas.codemp,
+        afas.dtinicocor,
+        afas.DTFINALOCOR,
+        afas.codfunc 
+    FROM TFPOCO afas
+    WHERE codhistocor IN (1, 2, 3, 4, 9, 28, 621)
+        AND DATEDIFF(day, dtinicocor, DTFINALOCOR) >= 180
+),
+
+todos_periodos as (
+    SELECT 
+        pa.codemp,
+        pa.codfunc,
+        pa.INI_PERIODO_AQUISITIVO,
+        pa.ano_offset,
+        pa.Anos,
+        CASE 
+            WHEN EXISTS (
+                SELECT 1 
+                FROM AFASTADOS afas
+                WHERE afas.codemp = pa.codemp
+                    AND afas.codfunc = pa.codfunc
+                    AND afas.dtinicocor >= pa.INI_PERIODO_AQUISITIVO
+                    AND afas.dtinicocor < DATEADD(YEAR, 1, pa.INI_PERIODO_AQUISITIVO)
+            ) THEN 1
+            ELSE 0
+        END as sem_ferias_afastado,
+        p.DATA_PARAM
+    FROM PERIODOS_AQUISITIVOS pa
+    CROSS JOIN PARAMETRO p
+    WHERE pa.Anos >= 1
+),
+
+Faltantes as (
+    SELECT 
+        fal.CODFUNC,                  
+        fal.CODEMP,
+        COUNT(fal.dtfalta) as Faltas_injustificadas,
+        tp.INI_PERIODO_AQUISITIVO,
+        MAX(col.situacao) as situacao,
+        case when COUNT(fal.dtfalta) >=6 and COUNT(fal.dtfalta)<=14 then 24
+             when COUNT(fal.dtfalta) >=15 and COUNT(fal.dtfalta)<=23 then 18
+             when COUNT(fal.dtfalta) >=24 and COUNT(fal.dtfalta)<=32 then 12 else 0 
+        end dias_de_direito_de_ferias
+    FROM TFPfal fal
+    INNER JOIN COLABORADORES col ON col.codfunc = fal.codfunc AND col.codemp = fal.codemp
+    INNER JOIN todos_periodos tp ON tp.CODFUNC = col.CODFUNC AND tp.CODEMP = col.codemp
+    WHERE fal.dtfalta >= tp.INI_PERIODO_AQUISITIVO
+        AND fal.DTFALTA <= col.DATA_PARAM
+    GROUP BY fal.CODFUNC, fal.CODEMP, tp.INI_PERIODO_AQUISITIVO
+    HAVING COUNT(fal.dtfalta) >= 6
+        AND MAX(col.situacao) = 1
+),
+
+INSALUBRIDADE AS (
+    SELECT 
+        FOL.CODFUNC,
+        FOL.CODEMP,
+        SUM(VLREVENTO) AS VALOR
+    FROM TFPFOL FOL
+    JOIN COLABORADORES COL ON COL.CODEMP = FOL.CODEMP AND COL.CODFUNC = FOL.CODFUNC
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = COL.CODEMP AND DR.CODFUNC = COL.CODFUNC
+    WHERE CODEVENTO IN (13, 14610036, 10037, 10126, 10066, 10039, 10006, 10027, 10106, 10038)
+        AND FOL.REFERENCIA = DATEFROMPARTS(YEAR(ISNULL(COL.DTDEM, DR.DATA_REF)), MONTH(ISNULL(COL.DTDEM, DR.DATA_REF)), 1)
+    GROUP BY FOL.CODEMP, FOL.CODFUNC
+),
+
+PERICULOSIDADE AS (
+    SELECT 
+        FOL.CODFUNC,
+        FOL.CODEMP,
+        SUM(VLREVENTO) AS VALOR
+    FROM TFPFOL FOL
+    JOIN COLABORADORES COL ON COL.CODEMP = FOL.CODEMP AND COL.CODFUNC = FOL.CODFUNC
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = COL.CODEMP AND DR.CODFUNC = COL.CODFUNC
+    WHERE CODEVENTO = 11
+        AND FOL.REFERENCIA = DATEFROMPARTS(YEAR(ISNULL(COL.DTDEM, DR.DATA_REF)), MONTH(ISNULL(COL.DTDEM, DR.DATA_REF)), 1)
+    GROUP BY FOL.CODEMP, FOL.CODFUNC
+),
+
+MD2 AS (
+    SELECT 
+        MED.CODEMP,
+        MED.CODFUNC,
+        CASE
+            WHEN DATEDIFF(MONTH, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 AND DATEDIFF(YEAR, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            WHEN DATEDIFF(MONTH, CASE 
+                                    WHEN COL.DTADM < DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF)) THEN DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF))
+                                    ELSE COL.DTADM END, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE SUM(VALOR) / DATEDIFF(MONTH, CASE 
+                                                WHEN COL.DTADM < DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF)) THEN DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF))
+                                                ELSE COL.DTADM END, ISNULL(COL.DTDEM, DR.DATA_REF)) / 30 * 
+                                                (30 + (FLOOR(DATEDIFF(DAY, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) / 365) * 3)) / 12 *
+                                                ROUND((30 + (FLOOR(DATEDIFF(DAY, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) / 365) * 3)) / 30, 0)
+        END AS VALOR,
+        CASE 
+            WHEN DATEDIFF(MONTH, CASE
+                                    WHEN COL.DTADM < DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF)) THEN DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF))
+                                    ELSE COL.DTADM
+                                END, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE SUM(VALOR) / DATEDIFF(MONTH, CASE
+                                                WHEN COL.DTADM < DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF)) THEN DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF))
+                                                ELSE COL.DTADM
+                                            END, ISNULL(COL.DTDEM, DR.DATA_REF)) / 12 * 
+                 (CASE WHEN (DATEDIFF(MONTH, CASE
+                                                WHEN COL.DTADM > DATEFROMPARTS(YEAR(ISNULL(COL.DTDEM, DR.DATA_REF)), 1, 1) THEN COL.DTADM
+                                                ELSE DATEFROMPARTS(YEAR(ISNULL(COL.DTDEM, DR.DATA_REF)), 1, 1) 
+                                                END, ISNULL(COL.DTDEM, DR.DATA_REF))) > 15 THEN 1
+                      ELSE (DATEDIFF(MONTH, CASE
+                                                WHEN COL.DTADM > DATEFROMPARTS(YEAR(ISNULL(COL.DTDEM, DR.DATA_REF)), 1, 1) THEN COL.DTADM
+                                                ELSE DATEFROMPARTS(YEAR(ISNULL(COL.DTDEM, DR.DATA_REF)), 1, 1) 
+                                                END, ISNULL(COL.DTDEM, DR.DATA_REF))) END)
+        END AS VALOR_2,
+        CASE 
+            WHEN DATEDIFF(MONTH, CASE
+                                    WHEN COL.DTADM < DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF)) THEN DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF))
+                                    ELSE COL.DTADM END, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE SUM(VALOR) / DATEDIFF(MONTH, CASE
+                                                WHEN COL.DTADM < DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF)) THEN DATEADD(MONTH, -12, ISNULL(COL.DTDEM, DR.DATA_REF))
+                                                ELSE COL.DTADM END, ISNULL(COL.DTDEM, DR.DATA_REF))
+        END AS VALOR_3
+    FROM MEDIA MED
+    JOIN COLABORADORES COL ON COL.CODEMP = MED.CODEMP AND COL.CODFUNC = MED.CODFUNC
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = COL.CODEMP AND DR.CODFUNC = COL.CODFUNC
+    WHERE MED.REFERENCIA >= COL.REFERENCIA_DECTER
+    GROUP BY MED.CODEMP, MED.CODFUNC, COL.DTADM, COL.DTDEM, DR.DATA_REF
+),
+
+FERIAS_PROPORCIONAIS AS (
+    SELECT 
+        COL.CODEMP,
+        COL.CODFUNC,
+        col.SALBASE,
+        CASE 
+            WHEN COL.DTADM = col.INI_PERIODO_AQUISITIVO AND DR.DATA_REF >= DATEADD(YEAR,1,COL.DTADM) THEN
+                ((CASE WHEN (CASE WHEN DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) = DAY(EOMONTH(ISNULL(COL.DTDEM, DR.DATA_REF))) THEN 30 ELSE DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) END) >= 15 THEN 1 ELSE 0 END) - 
+                (CASE WHEN (CASE WHEN DAY(MAX(DTINIAQUI)) = DAY(EOMONTH(MAX(DTINIAQUI))) THEN 30 ELSE DAY(MAX(DTINIAQUI)) END) >= 15 THEN 1 ELSE 0 END) + 
+                ROUND(((DATEDIFF(MONTH, MAX(DTINIAQUI), ISNULL(COL.DTDEM, DR.DATA_REF)))), 0) % 12)
+            WHEN DATEDIFF(day,cast(col.DTADM as date),GETDATE()) <15 then 0
+            WHEN (day(col.DATA_PARAM)+1 ) >= day(col.DTADM) THEN
+                ((CASE WHEN (CASE WHEN DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) = DAY(EOMONTH(ISNULL(COL.DTDEM, DR.DATA_REF))) THEN 30 ELSE DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) END) >= 15 THEN 1 ELSE 0 END) - 
+                (CASE WHEN (CASE WHEN DAY(MAX(DTINIAQUI)) = DAY(EOMONTH(MAX(DTINIAQUI))) THEN 30 ELSE DAY(MAX(DTINIAQUI)) END) >= 15 THEN 1 ELSE 0 END) + 
+                ROUND(((DATEDIFF(MONTH, MAX(DTINIAQUI), ISNULL(COL.DTDEM, DR.DATA_REF)))), 0) % 12)
+            WHEN (day(col.DATA_PARAM)+1 ) < day(col.DTADM) AND DAY(DR.DATA_REF) >= 15 THEN 
+                ((CASE WHEN (CASE WHEN DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) = DAY(EOMONTH(ISNULL(COL.DTDEM, DR.DATA_REF))) THEN 30 ELSE DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) END) >= 15 THEN 1 ELSE 0 END) - 
+                (CASE WHEN (CASE WHEN DAY(MAX(DTINIAQUI)) = DAY(EOMONTH(MAX(DTINIAQUI))) THEN 30 ELSE DAY(MAX(DTINIAQUI)) END) >= 15 THEN 1 ELSE 0 END) + 
+                ROUND(((DATEDIFF(MONTH, MAX(DTINIAQUI), ISNULL(COL.DTDEM, DR.DATA_REF)))), 0) % 12) - 1
+            ELSE
+                ((CASE WHEN (CASE WHEN DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) = DAY(EOMONTH(ISNULL(COL.DTDEM, DR.DATA_REF))) THEN 30 ELSE DAY(ISNULL(COL.DTDEM, DR.DATA_REF)) END) >= 15 THEN 1 ELSE 0 END) - 
+                (CASE WHEN (CASE WHEN DAY(MAX(DTINIAQUI)) = DAY(EOMONTH(MAX(DTINIAQUI))) THEN 30 ELSE DAY(MAX(DTINIAQUI)) END) >= 15 THEN 1 ELSE 0 END) + 
+                ROUND(((DATEDIFF(MONTH, MAX(DTINIAQUI), ISNULL(COL.DTDEM, DR.DATA_REF)))), 0) % 12)
+        END FERPROP
+    FROM COLABORADORES COL
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = COL.CODEMP AND DR.CODFUNC = COL.CODFUNC
+    LEFT JOIN FERIAS FER ON FER.CODEMP = COL.CODEMP AND FER.CODFUNC = COL.CODFUNC
+    LEFT JOIN INIPERAQUI INI ON INI.CODFUNC = COL.CODFUNC AND INI.CODEMP = COL.CODEMP
+    GROUP BY COL.CODEMP, COL.CODFUNC, SALBASE, COL.DTDEM, DR.DATA_REF, COL.DTADM, COL.DATA_PARAM, col.INI_PERIODO_AQUISITIVO
+),
+
+MD3 AS (
+    SELECT 
+        MED.CODEMP, 
+        MED.CODFUNC,
+        SUM(VALOR) / 12 AS VALOR 
+    FROM MEDIA MED
+    LEFT JOIN INIPERAQUI INI ON INI.CODEMP = MED.CODEMP AND INI.CODFUNC = MED.CODFUNC
+    LEFT JOIN COLABORADORES COL ON COL.CODEMP = MED.CODEMP AND COL.CODFUNC = MED.CODFUNC
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = COL.CODEMP AND DR.CODFUNC = COL.CODFUNC
+    WHERE DATEDIFF(MONTH, col.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)) >= 12
+        AND MED.REFERENCIA BETWEEN DATEFROMPARTS(YEAR(col.INI_PERIODO_AQUISITIVO), MONTH(col.INI_PERIODO_AQUISITIVO), 1) 
+                            AND DATEADD(MONTH, 12, DATEFROMPARTS(YEAR(col.INI_PERIODO_AQUISITIVO), MONTH(col.INI_PERIODO_AQUISITIVO), 1)) 
+    GROUP BY MED.CODEMP, MED.CODFUNC
+),
+
+base as (
+    SELECT DISTINCT
+        COL.CODEMP,
+        COL.VINCULO,
+        CASE 
+            WHEN COL.CODEMP = 1 THEN 'IDDS'
+            WHEN COL.CODEMP = 2 THEN 'AVANTE SOCIAL'
+            ELSE ''
+        END AS NOMEEMP,
+        COL.CPF,
+        COL.CODFUNC,
+        COL.NOMEFUNC,
+        COL.DTDEM,
+        COL.CODDEP,
+        COL.CODCARGO,
+        COL.DESCRCARGO,
+        COL.DTADM,
+        ULT.INI_ULT_PER_AQUI,
+        INI.INI_PERIODO_AQUISITIVO,
+        COL.SALBASE,
+        COL.DIAS_SALDO_SALARIO,
+        Faltas_injustificadas,
+        SUM(tp.sem_ferias_afastado) as Afastamentos_INSS_NO_PERIODO,
+        (COL.SALBASE) / 30 * DIAS_SALDO_SALARIO AS SALDO_SALARIO,
+        COL.DIAS_AVISO_INDENIZADO,
+        COL.AVISO_PREVIO_INDENIZADO,
+        COL.MEDIA_AVISO_PREVIO_INDENIZADO,
+        ROUND((ISNULL(COL.AVISO_PREVIO_INDENIZADO, 0) + ISNULL(COL.MEDIA_AVISO_PREVIO_INDENIZADO, 0)) * 0.08, 2) AS FGTS_AVISO_IND,
+        COL.DECTER_API,
+        MD2.VALOR AS MEDIA_DECTER_API,
+        CASE 
+            WHEN TIPO_AVISO_PREVIO = 'Trabalhado' THEN 0 
+            WHEN TIPO_AVISO_PREVIO <> 'Trabalhado' AND DIAS_AVISO_INDENIZADO < 15 THEN 0
+            WHEN DIAS_AVISO_INDENIZADO >= 15 AND DIAS_AVISO_INDENIZADO < 45 THEN ((1 * COL.SALBASE/12))
+            WHEN DIAS_AVISO_INDENIZADO >= 45 THEN 
+                CASE 
+                    WHEN (DIAS_AVISO_INDENIZADO/30.0 - FLOOR(DIAS_AVISO_INDENIZADO/30.0)) >= 0.5 
+                    THEN CEILING(DIAS_AVISO_INDENIZADO/30.0) * (COL.SALBASE/12)
+                    ELSE (FLOOR(DIAS_AVISO_INDENIZADO/30.0) * ((COL.SALBASE/12)))
+                END
+        END AS FERIAS_PROP_API,
+        MD2.VALOR AS MEDIA_FERIAS_API,                
+        COL.SALBASE / 12 * FERPROP AS FERIAS_PROPORCIONAIS,
+        CASE 
+            WHEN DATEDIFF(MONTH, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE ((COL.SALBASE / 12 * FERPROP) + 
+                CASE
+                    WHEN DATEDIFF(MONTH, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 AND DATEDIFF(YEAR, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+                    WHEN DATEDIFF(MONTH, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 AND DATEDIFF(YEAR, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+                    ELSE (MD1.VALOR / DATEDIFF(MONTH, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF))) 
+                END / 12 * FERPROP) / 3
+        END AS TERCO_FERIAS_PROPORCIONAIS,
+        CASE 
+            WHEN DATEDIFF(MONTH, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE ISNULL(MD1.VALOR / DATEDIFF(MONTH, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)) / 12 * FERPROP, 0)
+        END AS MEDIA_FERIAS_PROPORCIONAIS,
+        FERPROP,
+        CASE 
+            WHEN falt.codfunc IS NOT NULL THEN ISNULL(COL.SALBASE / 30 * SUM(dias_de_direito_de_ferias),0) - (SUM(tp.sem_ferias_afastado)*30)
+            WHEN fv.CODFUNC IS NOT NULL THEN ISNULL(COL.SALBASE / 30 * fv.dias_ferias_vencidas_sem_tirar,0) - (SUM(tp.sem_ferias_afastado)*30)
+            ELSE ISNULL(COL.SALBASE / 30 * COL.DIAS_FERIAS_VENCIDAS, 0) - (SUM(tp.sem_ferias_afastado)*30)
+        END FERIAS_VENCIDAS,
+        MD3.VALOR AS MEDIA_FERIAS_VENCIDAS,
+        CASE 
+            WHEN falt.codfunc IS NOT NULL THEN ISNULL(COL.SALBASE / 30 * SUM(dias_de_direito_de_ferias),0) + ISNULL(MD3.VALOR, 0) - (SUM(tp.sem_ferias_afastado)*30)
+            WHEN fv.CODFUNC IS NOT NULL THEN ISNULL(COL.SALBASE / 30 * fv.dias_ferias_vencidas_sem_tirar,0) + ISNULL(MD3.VALOR, 0) - (SUM(tp.sem_ferias_afastado)*30)
+            ELSE (ISNULL(COL.SALBASE / 30 * COL.DIAS_FERIAS_VENCIDAS, 0) + (ISNULL(MD3.VALOR, 0)) / 3) - (SUM(tp.sem_ferias_afastado)*30)
+        END TERCO_FERIAS_VENCIDAS,
+        CASE 
+            WHEN falt.codfunc IS NOT NULL THEN SUM(dias_de_direito_de_ferias) - (SUM(tp.sem_ferias_afastado)*30) 
+            WHEN fv.CODFUNC IS NOT NULL THEN fv.dias_ferias_vencidas_sem_tirar - (SUM(tp.sem_ferias_afastado)*30)
+            ELSE COL.DIAS_FERIAS_VENCIDAS - (SUM(tp.sem_ferias_afastado)*30)
+        END DIAS_FERIAS_VENCIDAS,
+        COL.SALDO_ANTERIOR_FGTS,
+        SFG.SALDO_SANKHYA_FGTS,
+        COL.SALDO_ANTERIOR_FGTS + SFG.SALDO_SANKHYA_FGTS AS SALDO_FGTS,
+        DEP.DESCRDEP,
+        COL.DECTERSALARIO,
+        ISNULL(MD2.VALOR_2, 0) AS MEDIA_DECTERCSALARIO,
+        ROUND((ISNULL(COL.DECTERSALARIO, 0) + ISNULL(MD2.VALOR_2, 0)) * 0.08, 2) AS FGTS,
+        FGS.FGTSMES,
+        CASE 
+            WHEN DATEDIFF(MONTH, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE ISNULL(MD1.VALOR / DATEDIFF(MONTH, INI.INI_PERIODO_AQUISITIVO, ISNULL(COL.DTDEM, DR.DATA_REF)), 0)
+        END AS MEDIA_PERIODO_AQUISITIVO,
+        CASE
+            WHEN DATEDIFF(MONTH, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 AND DATEDIFF(YEAR, COL.DTADM, ISNULL(COL.DTDEM, DR.DATA_REF)) = 0 THEN 0
+            ELSE MD2.VALOR_3
+        END AS MEDIA_12_MESES,
+        ISNULL(INS.VALOR, 0) AS INSALUBRIDADE,
+        ISNULL(PER.VALOR, 0) AS PERICULOSIDADE
+    FROM COLABORADORES COL 
+    INNER JOIN DATA_REFERENCIA DR ON DR.CODEMP = COL.CODEMP AND DR.CODFUNC = COL.CODFUNC
+    INNER JOIN TFPCAR CAR ON CAR.CODCARGO = COL.CODCARGO  
+    INNER JOIN TFPDEP DEP ON DEP.CODDEP = COL.CODDEP
+    LEFT JOIN SALDO_FGTS SFG ON SFG.CODEMP = COL.CODEMP AND SFG.CODFUNC = COL.CODFUNC
+    LEFT JOIN INIPERAQUI INI ON INI.CODEMP = COL.CODEMP AND INI.CODFUNC = COL.CODFUNC
+    LEFT JOIN ULTPERAQUI ULT ON ULT.CODEMP = COL.CODEMP AND ULT.CODFUNC = COL.CODFUNC
+    LEFT JOIN FGTS_MES FGS ON FGS.CODEMP = COL.CODEMP AND FGS.CODFUNC = COL.CODFUNC AND FGS.REFERENCIA = COL.REFERENCIA
+    LEFT JOIN COMP_SALDO CPS ON CPS.CODEMP = COL.CODEMP AND CPS.CODFUNC = COL.CODFUNC AND CPS.REFERENCIA = COL.REFERENCIA
+    LEFT JOIN MD1 ON MD1.CODEMP = COL.CODEMP AND MD1.CODFUNC = COL.CODFUNC
+    LEFT JOIN MD2 ON MD2.CODEMP = COL.CODEMP AND MD2.CODFUNC = COL.CODFUNC
+    LEFT JOIN MD3 ON MD3.CODEMP = COL.CODEMP AND MD3.CODFUNC = COL.CODFUNC
+    LEFT JOIN FERIAS_PROPORCIONAIS FPR ON FPR.CODEMP = COL.CODEMP AND FPR.CODFUNC = COL.CODFUNC
+    LEFT JOIN INSALUBRIDADE INS ON INS.CODEMP = COL.CODEMP AND INS.CODFUNC = COL.CODFUNC
+    LEFT JOIN PERICULOSIDADE PER ON PER.CODEMP = COL.CODEMP AND PER.CODFUNC = COL.CODFUNC
+    LEFT JOIN Faltantes falt ON falt.CODEMP = COL.CODEMP and falt.CODFUNC = COL.codfunc
+    LEFT JOIN BASE_FERIAS_VENCIDAS fv ON fv.CODFUNC = COL.CODFUNC and fv.CODEMP = COL.codemp
+    LEFT JOIN todos_periodos tp ON tp.codfunc = col.codfunc and tp.codemp = COL.codemp
+    CROSS JOIN PARAMETRO p 
+    GROUP BY
+        COL.CODEMP, COL.VINCULO, Faltas_injustificadas, fv.dias_ferias_vencidas_sem_tirar, fv.CODFUNC,
+        COL.CPF, COL.CODFUNC, COL.NOMEFUNC, COL.DTDEM, COL.CODDEP, COL.CODCARGO, COL.DESCRCARGO,
+        COL.DTADM, ULT.INI_ULT_PER_AQUI, INI.INI_PERIODO_AQUISITIVO, COL.SALBASE, COL.DIAS_SALDO_SALARIO,
+        COL.DIAS_AVISO_INDENIZADO, COL.AVISO_PREVIO_INDENIZADO, COL.MEDIA_AVISO_PREVIO_INDENIZADO,
+        COL.DECTER_API, MD2.VALOR, TIPO_AVISO_PREVIO, COL.DIAS_AVISO_INDENIZADO, FERPROP,
+        falt.codfunc, COL.SALBASE, COL.DIAS_FERIAS_VENCIDAS, MD3.VALOR, COL.SALDO_ANTERIOR_FGTS,
+        SFG.SALDO_SANKHYA_FGTS, DEP.DESCRDEP, COL.DECTERSALARIO, MD2.VALOR_2, FGS.FGTSMES,
+        MD1.VALOR, INI.INI_PERIODO_AQUISITIVO, COL.DTADM, COL.DTDEM, DR.DATA_REF, MD2.VALOR_3,
+        INS.VALOR, PER.VALOR
+),
+
+base_dois as (
+    SELECT 
+        b.CODEMP,
+        b.VINCULO,
+        NOMEEMP,
+        TIPO_AVISO_PREVIO,
+        b.CPF,
+        b.CODFUNC,
+        cc.CODCENCUS,
+        cc.descrcencus as Centro_de_custo,
+        NOMEFUNC,
+        DTDEM,
+        b.CODDEP,
+        CODCARGO,
+        DESCRCARGO,
+        DTADM,
+        INI_ULT_PER_AQUI,
+        INI_PERIODO_AQUISITIVO,
+        SALBASE,
+        DIAS_SALDO_SALARIO,
+        SALDO_SALARIO,
+        CASE WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 0 ELSE AVISO_PREVIO_INDENIZADO END AS AVISO_PREVIO_INDENIZADO,
+        DIAS_AVISO_INDENIZADO,
+        CASE WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 0 ELSE MEDIA_AVISO_PREVIO_INDENIZADO END AS MEDIA_AVISO_PREVIO_INDENIZADO,
+        CASE WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 0 ELSE FGTS_AVISO_IND END AS FGTS_AVISO_IND,
+        CASE 
+            WHEN TIPO_AVISO_PREVIO = 'Trabalhado' THEN 0 
+            WHEN TIPO_AVISO_PREVIO <> 'Trabalhado' AND DIAS_AVISO_INDENIZADO < 15 THEN 0
+            WHEN DIAS_AVISO_INDENIZADO >= 15 AND DIAS_AVISO_INDENIZADO < 45 THEN 1 * SALBASE/12
+            WHEN DIAS_AVISO_INDENIZADO >= 45 THEN 
+                CASE 
+                    WHEN (DIAS_AVISO_INDENIZADO/30.0 - FLOOR(DIAS_AVISO_INDENIZADO/30.0)) >= 0.5 
+                    THEN CEILING(DIAS_AVISO_INDENIZADO/30.0) * (SALBASE/12)
+                    ELSE FLOOR(DIAS_AVISO_INDENIZADO/30.0) * (SALBASE/12)
+                END
+        END AS DECTER_API,
+        CASE WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 0 ELSE MEDIA_DECTER_API END AS MEDIA_DECTER_API,
+        CASE 
+            WHEN TIPO_AVISO_PREVIO = 'Trabalhado' THEN 0 
+            WHEN TIPO_AVISO_PREVIO <> 'Trabalhado' AND DIAS_AVISO_INDENIZADO < 15 THEN 0
+            WHEN DIAS_AVISO_INDENIZADO >= 15 AND DIAS_AVISO_INDENIZADO < 45 THEN ((1 * SALBASE/12)+MEDIA_DECTER_API)*0.08
+            WHEN DIAS_AVISO_INDENIZADO >= 45 THEN 
+                CASE 
+                    WHEN (DIAS_AVISO_INDENIZADO/30.0 - FLOOR(DIAS_AVISO_INDENIZADO/30.0)) >= 0.5 
+                    THEN CEILING(DIAS_AVISO_INDENIZADO/30.0) * (SALBASE/12)
+                    ELSE (FLOOR(DIAS_AVISO_INDENIZADO/30.0) * ((SALBASE/12)+MEDIA_DECTER_API))*0.08
+                END
+        END AS FGTS_DECTERC_API,
+        CASE WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 0 ELSE FERIAS_PROP_API END AS FERIAS_PROP_API,
+        CASE WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 0 ELSE (ISNULL(FERIAS_PROP_API,0)+ ISNULL(MEDIA_FERIAS_API,0))/3 END AS UM_TERCO_FERIAS_API,
+        CASE WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 0 ELSE MEDIA_FERIAS_API END AS MEDIA_FERIAS_API,
+        FERIAS_PROPORCIONAIS,
+        (ISNULL(FERIAS_PROPORCIONAIS, 0) + ISNULL(MEDIA_FERIAS_PROPORCIONAIS, 0))/3 AS UM_TERCO_FERIAS_PROPROCIONAIS,
+        MEDIA_FERIAS_PROPORCIONAIS,
+        FERPROP,
+        FERIAS_VENCIDAS,
+        MEDIA_FERIAS_VENCIDAS,
+        TERCO_FERIAS_VENCIDAS,
+        DIAS_FERIAS_VENCIDAS,
+        SALDO_ANTERIOR_FGTS,
+        SALDO_SANKHYA_FGTS,
+        SALDO_FGTS,
+        b.DESCRDEP,
+        DECTERSALARIO,
+        MEDIA_DECTERCSALARIO,
+        FGTS AS FGTS_DECTERCEIRO,
+        MEDIA_PERIODO_AQUISITIVO,
+        MEDIA_12_MESES,
+        INSALUBRIDADE,                
+        PERICULOSIDADE,
+        FALTAS_INJUSTIFICADAS,
+        Afastamentos_INSS_NO_PERIODO AS AFASTAMENTOS_INSS_NO_PERIODO
+    FROM base b 
+    LEFT JOIN TFPAVI avi ON avi.CODFUNC = b.CODFUNC and avi.CODEMP = b.codemp
+    INNER JOIN TFPDEP d ON d.CODDEP = b.coddep
+    INNER JOIN TSICUS cc ON cc.codcencus = d.codcencus
+    CROSS JOIN PARAMETRO p
+),
+
+base_tres as (
+    SELECT *, 
+        (SALDO_SALARIO + INSALUBRIDADE + PERICULOSIDADE)*0.08 as FGTS_MES,
+        CASE 
+            WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 
+                ISNULL(FGTS_DECTERCEIRO,0) +
+                ((SALDO_SALARIO + INSALUBRIDADE + PERICULOSIDADE)*0.08) +
+                (((ISNULL(SALDO_FGTS,0) + ((ISNULL(SALDO_SALARIO,0) + ISNULL(INSALUBRIDADE,0) + ISNULL(PERICULOSIDADE,0))*0.08) +
+                ISNULL(FGTS_DECTERCEIRO,0)))*0.4)
+            WHEN TIPO_AVISO_PREVIO ='Indenizado' THEN
+                ISNULL(FGTS_DECTERC_API,0) + ISNULL(FGTS_AVISO_IND,0) + ISNULL(FGTS_DECTERCEIRO,0) +
+                ((SALDO_SALARIO + INSALUBRIDADE + PERICULOSIDADE)*0.08) +
+                (((ISNULL(SALDO_FGTS,0) + ((ISNULL(SALDO_SALARIO,0) + ISNULL(INSALUBRIDADE,0) + ISNULL(PERICULOSIDADE,0))*0.08) +
+                ISNULL(FGTS_DECTERCEIRO,0) + ISNULL(FGTS_DECTERC_API,0) + ISNULL(FGTS_AVISO_IND,0)))*0.4)
+        END TOTAL_FGTS,
+        CASE 
+            WHEN TIPO_AVISO_PREVIO ='Indenizado' THEN 
+                ((ISNULL(SALDO_FGTS,0) + ((ISNULL(SALDO_SALARIO,0) + ISNULL(INSALUBRIDADE,0) + ISNULL(PERICULOSIDADE,0))*0.08) +
+                ISNULL(FGTS_DECTERCEIRO,0) + ISNULL(FGTS_DECTERC_API,0) + ISNULL(FGTS_AVISO_IND,0)))*0.4
+            WHEN TIPO_AVISO_PREVIO ='Trabalhado' THEN 
+                ((ISNULL(SALDO_FGTS,0) + ((ISNULL(SALDO_SALARIO,0) + ISNULL(INSALUBRIDADE,0) + ISNULL(PERICULOSIDADE,0))*0.08) +
+                ISNULL(FGTS_DECTERCEIRO,0)))*0.4
+        END AS MULTA_FGTS
+    FROM base_dois
+)
+
+SELECT 
+    *,
+    ISNULL(SALDO_SALARIO,0) + 
+    ISNULL(AVISO_PREVIO_INDENIZADO,0) + 
+    ISNULL(MEDIA_AVISO_PREVIO_INDENIZADO,0) + 
+    ISNULL(DECTER_API,0) + 
+    ISNULL(MEDIA_DECTER_API,0) + 
+    ISNULL(FERIAS_PROP_API,0) + 
+    ISNULL(UM_TERCO_FERIAS_API,0) + 
+    ISNULL(MEDIA_FERIAS_API,0) + 
+    ISNULL(FERIAS_PROPORCIONAIS,0) + 
+    ISNULL(UM_TERCO_FERIAS_PROPROCIONAIS,0) + 
+    ISNULL(MEDIA_FERIAS_PROPORCIONAIS,0) + 
+    ISNULL(FERIAS_VENCIDAS,0) + 
+    ISNULL(MEDIA_FERIAS_VENCIDAS,0) + 
+    ISNULL(TERCO_FERIAS_VENCIDAS,0) + 
+    ISNULL(DECTERSALARIO,0) +                     
+    ISNULL(MEDIA_DECTERCSALARIO,0) + 
+    ISNULL(INSALUBRIDADE,0) + 
+    ISNULL(PERICULOSIDADE,0) as TOTAL_VERBAS_RESISORIAS,
+    ISNULL(TOTAL_FGTS,0) +
+    ISNULL(SALDO_SALARIO,0) +  
+    ISNULL(AVISO_PREVIO_INDENIZADO,0) + 
+    ISNULL(MEDIA_AVISO_PREVIO_INDENIZADO,0) + 
+    ISNULL(DECTER_API,0) + 
+    ISNULL(MEDIA_DECTER_API,0) + 
+    ISNULL(FERIAS_PROP_API,0) + 
+    ISNULL(UM_TERCO_FERIAS_API,0) + 
+    ISNULL(MEDIA_FERIAS_API,0) + 
+    ISNULL(FERIAS_PROPORCIONAIS,0) + 
+    ISNULL(UM_TERCO_FERIAS_PROPROCIONAIS,0) + 
+    ISNULL(MEDIA_FERIAS_PROPORCIONAIS,0) +  
+    ISNULL(FERIAS_VENCIDAS,0) + 
+    ISNULL(MEDIA_FERIAS_VENCIDAS,0) + 
+    ISNULL(TERCO_FERIAS_VENCIDAS,0) + 
+    ISNULL(DECTERSALARIO,0) + 
+    ISNULL(MEDIA_DECTERCSALARIO,0) + 
+    ISNULL(INSALUBRIDADE,0) + 
+    ISNULL(PERICULOSIDADE,0) AS TOTAL_PASSIVO_TRABALHISTA
+FROM base_tres"""  # mantenha o mesmo conteúdo
+
+def get_last_day_of_month(year, month):
+    next_month = datetime(year, month, 1) + relativedelta(months=1)
+    last_day = next_month - timedelta(days=1)
+    return last_day.strftime("%d/%m/%Y")
+
+def generate_months_range():
+    today = datetime.now()
+    current_year = today.year
+    current_month = today.month
+    return [(current_year, month) for month in range(current_month, 13)]
+
+# Conectar ao banco
+conn = pyodbc.connect(connection_string)
+cursor = conn.cursor()
+
+# Variáveis para controle do log
+status = "Script bem sucedido"
+mensagem_erro = None
+all_results = []
+data_execucao = datetime.now().date()
+hora_execucao = datetime.now().time()
+
+try:
+    months_range = generate_months_range()
+    for year, month in months_range:
+        data_param = get_last_day_of_month(year, month)
+        print(f"Processando mês: {data_param}")
+        sql_final = sql_template.format(data_param=data_param)
+        try:
+            df_month = pd.read_sql(sql_final, conn)
+            if not df_month.empty:
+                df_month['DATA_PARAM_USED'] = data_param
+                all_results.append(df_month)
+            else:
+                print(f"  Nenhum resultado para {data_param}")
+        except Exception as e:
+            print(f"  Erro na query para {data_param}: {e}")
+            # Opcional: pode parar ou continuar
+            raise  # para interromper e registrar erro
+
+    if all_results:
+        final_df = pd.concat(all_results, ignore_index=True)
+        print(f"Total de linhas coletadas: {len(final_df)}")
+        final_df.to_csv(CAMINHO_CSV, index=False, encoding='utf-8-sig')
+        print("Arquivo CSV gerado com sucesso.")
+    else:
+        print("Nenhum dado retornado para nenhum mês.")
+        # Ainda assim considera sucesso (mas sem arquivo)
+        status = "Script bem sucedido - sem dados"
+
+except Exception as e:
+    status = "Script mal sucedido"
+    mensagem_erro = traceback.format_exc()
+    print(f"Erro geral: {mensagem_erro}")
+
+finally:
+    # --- Inserir log na tabela log_automacoes ---
+    try:
+        # Ajuste os nomes das colunas conforme a realidade da sua tabela
+        insert_sql = """
+            INSERT INTO log_automacoes (nome_script, data, hora, status, mensagem_erro)
+            VALUES (?, ?, ?, ?, ?)
+        """
+        cursor.execute(insert_sql, (
+            NOME_SCRIPT,
+            data_execucao,
+            hora_execucao.strftime("%H:%M:%S"),
+            status,
+            mensagem_erro
+        ))
+        conn.commit()
+        print("Log inserido com sucesso.")
+    except Exception as log_err:
+        print(f"Falha ao inserir log: {log_err}")
+    finally:
+        conn.close()

@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ cliente_nome | default('Imobiliária') }} | WAAS</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: {{ cor_primaria | default('#6366f1') }};
+            --secondary: {{ cor_secundaria | default('#764ba2') }};
+            --bg-color: {{ layout_config.cor_fundo_geral | default('#0f172a') }};
+            --card-bg: {{ layout_config.cor_cards | default('#1e293b') }};
+            --text-main: {{ layout_config.cor_texto_principal | default('#f8fafc') }};
+            --text-muted: {{ layout_config.cor_texto_secundario | default('#94a3b8') }};
+            --border: {{ layout_config.cor_bordas | default('#334155') }};
+            --success: {{ layout_config.cor_destaque | default('#10b981') }};
+            --success-hover: {{ layout_config.cor_destaque_hover | default('#059669') }};
+
+            /* Tema dinâmico do customizador */
+            --header-bg: {{ layout_config.cor_fundo_header | default('rgba(30, 41, 59, 0.8)') }};
+            --hero-bg-color: {{ layout_config.cor_fundo_hero | default('transparent') }};
+            --btn-primary-bg: {{ layout_config.cor_botao_primario | default('linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)') }};
+            --btn-secondary-bg: {{ layout_config.cor_botao_secundario | default('transparent') }};
+            --btn-hover-bg: {{ layout_config.cor_botao_hover | default('linear-gradient(135deg, var(--primary) 10%, var(--secondary) 90%)') }};
+            --btn-radius: {{ layout_config.border_radius_btn | default('50px') }};
+            --card-radius: {{ layout_config.border_radius_card | default('24px') }};
+            
+            --font-base: '{{ layout_config.font_base | default("Inter") }}', sans-serif;
+            --font-title: '{{ layout_config.font_title | default("Outfit") }}', sans-serif;
+            --title-size: {{ layout_config.title_size | default('52px') }};
+            --title-weight: {{ layout_config.title_weight | default('800') }};
+            --subtitle-size: {{ layout_config.subtitle_size | default('18px') }};
+
+            {% if layout_config.shadow_intensity == 'strong' %}
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 12px 24px -4px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+            {% elif layout_config.shadow_intensity == 'soft' %}
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+            {% elif layout_config.shadow_intensity == 'none' %}
+            --shadow-sm: none;
+            --shadow-md: none;
+            --shadow-lg: none;
+            {% else %}
+            --shadow-sm: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-md: 0 8px 16px rgba(0,0,0,0.15);
+            --shadow-lg: 0 16px 32px rgba(0,0,0,0.2);
+            {% endif %}
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-base);
+            background-color: var(--bg-color);
+            {% if layout_config.bg_type == 'solid' %}
+            background-image: none;
+            {% elif layout_config.bg_type == 'image' and layout_config.bg_image_url %}
+            background-image: url('{{ layout_config.bg_image_url }}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            {% else %}
+            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(118, 75, 162, 0.05) 0%, transparent 40%);
+            {% endif %}
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        /* Header / Navbar */
+        .header {
+            background-color: var(--header-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: {{ layout_config.header_style | default('sticky') }};
+            top: 0;
+            z-index: 100;
+            width: 100%;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            width: 100%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            max-height: 40px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: var(--font-title);
+            color: var(--text-main);
+            letter-spacing: -0.03em;
+        }
+
+        .logo-text .dot {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        .btn-cta-nav {
+            background: var(--btn-primary-bg);
+            color: white !important;
+            padding: 10px 22px;
+            border-radius: var(--btn-radius);
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-cta-nav:hover {
+            transform: translateY(-1px);
+            background: var(--btn-hover-bg);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Container principal */
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            {% if layout_config.spacing_main == 'spacious' %}
+            padding: 140px 0 100px 0;
+            {% elif layout_config.spacing_main == 'compact' %}
+            padding: 60px 0 40px 0;
+            {% else %}
+            padding: 100px 0 80px 0;
+            {% endif %}
+            text-align: {{ layout_config.hero_align | default('center') }};
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: {% if layout_config.hero_align == 'left' %}flex-start{% elif layout_config.hero_align == 'right' %}flex-end{% else %}center{% endif %};
+            justify-content: center;
+            background-color: var(--hero-bg-color);
+        }
+
+        .badge {
+            background-color: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font-title);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            display: inline-block;
+        }
+
+        .hero-section h1 {
+            font-family: var(--font-title);
+            font-size: var(--title-size);
+            font-weight: var(--title-weight);
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+            line-height: 1.15;
+            max-width: 800px;
+        }
+
+        .hero-section .highlight {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-section p {
+            color: var(--text-muted);
+            font-size: var(--subtitle-size);
+            line-height: 1.6;
+            max-width: 680px;
+            margin: {% if layout_config.hero_align == 'left' %}0 0 36px 0{% elif layout_config.hero_align == 'right' %}0 0 36px auto{% else %}0 auto 36px auto{% endif %};
+        }
+
+        /* Seção de Filtros */
+        .filters-section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--card-radius);
+            padding: 24px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filters-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-group select, .filter-group input {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: calc(var(--btn-radius) * 0.5 || 8px);
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .filter-group select {
+            cursor: pointer;
+        }
+
+        .filter-group select:focus, .filter-group input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Grid de Imóveis */
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .property-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
+            height: 100%;
+        }
+
+        .property-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .property-image-container {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            background-color: rgba(255,255,255,0.02);
+            overflow: hidden;
+        }
+
+        .property-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .property-card:hover .property-image-container img {
+            transform: scale(1.05);
+        }
+
+        .property-badge-group {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .property-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .badge-negocio-Venda { background-color: var(--success); }
+        .badge-negocio-Aluguel { background-color: var(--primary); }
+        .badge-tipo { background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); border: 1px solid var(--border); }
+
+        .property-content {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .property-price {
+            font-family: var(--font-title);
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .property-title {
+            font-family: var(--font-title);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+
+        .property-address {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .property-address i {
+            color: var(--primary);
+        }
+
+        .property-features {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            flex-wrap: wrap;
+        }
+
+        .feature-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .feature-item i {
+            color: var(--primary);
+        }
+
+        .btn-whatsapp-property {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--btn-radius);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-top: auto;
+            text-decoration: none;
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.2);
+        }
+
+        .btn-whatsapp-property:hover {
+            background-color: #128C7E;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(37, 211, 102, 0.3);
+        }
+
+        .empty-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 40px;
+            color: var(--text-muted);
+            background-color: var(--card-bg);
+            border: 1px dashed var(--border);
+            border-radius: var(--card-radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .empty-message i {
+            font-size: 48px;
+            color: var(--primary);
+            opacity: 0.5;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: rgba(30, 41, 59, 0.4);
+            border-top: 1px solid var(--border);
+            padding: 40px 0;
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: auto;
+            width: 100%;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .footer-brand h3 {
+            font-family: var(--font-title);
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        /* Portal Admin Link */
+        .admin-link {
+            text-align: center;
+            margin: 16px 0 40px 0;
+        }
+
+        .admin-link a {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            font-weight: 500;
+        }
+
+        .admin-link a:hover {
+            color: var(--text-main);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .hero-section h1 {
+                font-size: 38px;
+            }
+            .footer-content {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            .filters-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* Modal de Galeria de Fotos */
+        .gallery-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .gallery-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .gallery-container {
+            position: relative;
+            max-width: 900px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .gallery-main-image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 60vh;
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .gallery-main-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: #020617;
+        }
+
+        .gallery-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--border);
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 18px;
+            z-index: 10;
+        }
+
+        .gallery-nav-btn:hover {
+            background-color: var(--primary);
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        .gallery-prev { left: 16px; }
+        .gallery-next { right: 16px; }
+
+        .gallery-close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 32px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            z-index: 30;
+        }
+
+        .gallery-close:hover {
+            color: var(--text-main);
+        }
+
+        .gallery-thumbnails {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 8px 0;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .gallery-thumb {
+            width: 80px;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            opacity: 0.6;
+            flex-shrink: 0;
+        }
+
+        .gallery-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-thumb:hover, .gallery-thumb.active {
+            border-color: var(--primary);
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* Ícone de Expandir no Card */
+        .btn-expand-gallery {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background-color: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--border);
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            z-index: 10;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-expand-gallery:hover {
+            background-color: var(--primary);
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <div class="brand">
+                {% if logo_url %}
+                    <img src="{{ logo_url }}" class="logo-img" alt="Logo">
+                {% else %}
+                    <a href="#" class="logo">
+                        <span class="logo-text">{{ cliente_nome | default('Imobiliária') }}<span class="dot">.</span></span>
+                    </a>
+                {% endif %}
+            </div>
+            <ul class="nav-links">
+                {% if whatsapp %}
+                <li><a href="#" class="btn-cta-nav" onclick="abrirWhatsAppHome(event)"><i class="fa-brands fa-whatsapp"></i> Fale Conosco</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <section class="container hero-section">
+            {% if layout_config.show_hero_badge is not defined or layout_config.show_hero_badge %}
+            <span class="badge">{{ layout_config.hero_badge_text | default('Oportunidades Únicas') }}</span>
+            {% endif %}
+            <h1>{{ titulo_site | default('Encontre o Imóvel dos Seus <span class="highlight">Sonhos</span>', true) | safe }}</h1>
+            <p>{{ corpo_site | default('Selecione as melhores ofertas de venda e locação de imóveis residenciais e comerciais. Conectamos você ao seu novo lar de forma rápida e segura.', true) }}</p>
+        </section>
+
+        <!-- Filtros -->
+        <section class="container">
+            <div class="filters-section">
+                <div class="filters-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px;">
+                    <div class="filter-group">
+                        <label>Tipo de Negócio</label>
+                        <select id="filterNegocio" onchange="filtrarOfertas()">
+                            <option value="Todos">Todos</option>
+                            <option value="Venda">Venda</option>
+                            <option value="Aluguel">Aluguel</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Tipo de Imóvel</label>
+                        <select id="filterTipoImovel" onchange="filtrarOfertas()">
+                            <option value="Todos">Todos os Tipos</option>
+                            <option value="Apartamento">Apartamento</option>
+                            <option value="Apartamento Cobertura">Apartamento Cobertura</option>
+                            <option value="Casa">Casa</option>
+                            <option value="Casa de Condomínio">Casa de Condomínio</option>
+                            <option value="Kitnet">Kitnet</option>
+                            <option value="Terreno">Terreno</option>
+                            <option value="Comercial">Comercial</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Preço Mínimo (R$)</label>
+                        <input type="number" id="filterValorMin" placeholder="Mínimo" oninput="filtrarOfertas()">
+                    </div>
+                    <div class="filter-group">
+                        <label>Preço Máximo (R$)</label>
+                        <input type="number" id="filterValorMax" placeholder="Máximo" oninput="filtrarOfertas()">
+                    </div>
+                    <div class="filter-group">
+                        <label>Condomínio Máx. (R$)</label>
+                        <input type="number" id="filterCondoMax" placeholder="Máximo" oninput="filtrarOfertas()">
+                    </div>
+                    <div class="filter-group">
+                        <label>Quartos</label>
+                        <select id="filterQuartos" onchange="filtrarOfertas()">
+                            <option value="Todos">Tanto faz</option>
+                            <option value="1">1+ Quartos</option>
+                            <option value="2">2+ Quartos</option>
+                            <option value="3">3+ Quartos</option>
+                            <option value="4">4+ Quartos</option>
+                            <option value="5">5+ Quartos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Vagas</label>
+                        <select id="filterVagas" onchange="filtrarOfertas()">
+                            <option value="Todos">Tanto faz</option>
+                            <option value="1">1+ Vagas</option>
+                            <option value="2">2+ Vagas</option>
+                            <option value="3">3+ Vagas</option>
+                            <option value="4">4+ Vagas</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Banheiros</label>
+                        <select id="filterBanheiros" onchange="filtrarOfertas()">
+                            <option value="Todos">Tanto faz</option>
+                            <option value="1">1+ Banheiros</option>
+                            <option value="2">2+ Banheiros</option>
+                            <option value="3">3+ Banheiros</option>
+                            <option value="4">4+ Banheiros</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Mobiliado?</label>
+                        <select id="filterMobiliado" onchange="filtrarOfertas()">
+                            <option value="Todos">Tanto faz</option>
+                            <option value="S">Sim</option>
+                            <option value="N">Não</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Suíte?</label>
+                        <select id="filterSuite" onchange="filtrarOfertas()">
+                            <option value="Todos">Tanto faz</option>
+                            <option value="S">Sim</option>
+                            <option value="N">Não</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Próximo ao Metrô?</label>
+                        <select id="filterProximoMetro" onchange="filtrarOfertas()">
+                            <option value="Todos">Tanto faz</option>
+                            <option value="S">Sim</option>
+                            <option value="N">Não</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Grid de Ofertas -->
+        <section class="container">
+            <div class="listings-grid" id="listingsGrid">
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary); margin-bottom: 12px;"></i>
+                    <p>Buscando imóveis cadastrados...</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="admin-link">
+            <a href="/admin/login"><i class="fa-solid fa-user-shield"></i> Portal Administrativo</a>
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3>{{ cliente_nome | default('Imobiliária') }}.</h3>
+                <p>O caminho mais curto para o seu novo imóvel.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 {{ cliente_nome | default('Imobiliária') }}. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        // WhatsApp da Imobiliária
+        const NUMERO_WHATSAPP = '{{ whatsapp | default("5531986409761", true) }}';
+        
+        function abrirWhatsAppHome(e) {
+            if (e) e.preventDefault();
+            abrirWhatsAppUniversal(NUMERO_WHATSAPP, 'Olá! Gostaria de receber mais informações sobre imóveis disponíveis.');
+        }
+
+        function abrirWhatsAppUniversal(numero, mensagem) {
+            const msgCodificada = encodeURIComponent(mensagem);
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const baseUrl = isMobile ? 'https://api.whatsapp.com/send' : 'https://web.whatsapp.com/send';
+            window.open(`${baseUrl}?phone=${numero}&text=${msgCodificada}`, '_blank');
+        }
+
+        let ofertasGlobais = [];
+
+        async function carregarOfertas() {
+            const container = document.getElementById('listingsGrid');
+            try {
+                const response = await fetch('/api/imobiliaria/ofertas_cliente');
+                const data = await response.json();
+                if (data.sucesso && data.ofertas && data.ofertas.length > 0) {
+                    ofertasGlobais = data.ofertas;
+                    renderizarOfertas(ofertasGlobais);
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-message">
+                            <i class="fa-solid fa-house-chimney-crack"></i>
+                            <h3>Nenhum imóvel disponível</h3>
+                            <p>Não há ofertas ativas com imagens cadastradas no momento.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar ofertas:', error);
+                container.innerHTML = `
+                    <div class="empty-message">
+                        <i class="fa-solid fa-circle-exclamation" style="color: var(--danger);"></i>
+                        <h3>Erro de Conexão</h3>
+                        <p>Ocorreu um erro ao carregar as ofertas do servidor.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderizarOfertas(lista) {
+            const container = document.getElementById('listingsGrid');
+            container.innerHTML = '';
+
+            if (lista.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-message">
+                        <i class="fa-solid fa-house-circle-xmark"></i>
+                        <h3>Nenhum resultado</h3>
+                        <p>Tente alterar os filtros para encontrar outros imóveis.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            lista.forEach(oferta => {
+                const d = oferta.dados || {};
+                const card = document.createElement('div');
+                card.className = 'property-card';
+                
+                // Pega a primeira imagem cadastrada
+                const primeiroIndiceImg = oferta.imagens_ids && oferta.imagens_ids.length > 0 ? oferta.imagens_ids[0] : 1;
+                const imgUrl = `/img/oferta/${oferta.id}/${primeiroIndiceImg}`;
+
+                const imagensIdsJson = JSON.stringify(oferta.imagens_ids).replace(/"/g, '&quot;');
+
+                card.innerHTML = `
+                    <div class="property-image-container" style="cursor: pointer;" onclick="abrirGaleria(${oferta.id}, ${imagensIdsJson})">
+                        <img src="${imgUrl}" alt="${d.titulo || 'Imóvel'}">
+                        <div class="property-badge-group">
+                            <span class="property-badge badge-negocio-${d.tipo_negocio || 'Venda'}">${d.tipo_negocio || 'Venda'}</span>
+                            <span class="property-badge badge-tipo">${d.tipo_imovel || 'Apartamento'}</span>
+                        </div>
+                        <button class="btn-expand-gallery" onclick="event.stopPropagation(); abrirGaleria(${oferta.id}, ${imagensIdsJson})">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
+                    </div>
+                    <div class="property-content">
+                        <div class="property-price">R$ ${d.valor || '0,00'}</div>
+                        <h3 class="property-title" style="cursor: pointer;" onclick="abrirGaleria(${oferta.id}, ${imagensIdsJson})">${d.titulo || 'Sem Título'}</h3>
+                        <div class="property-address"><i class="fa-solid fa-location-dot"></i> ${d.endereco || 'Endereço não informado'}</div>
+                        
+                        <div class="property-features">
+                            ${d.area ? `<span class="feature-item"><i class="fa-solid fa-ruler-combined"></i> ${d.area} m²</span>` : ''}
+                            ${d.quartos ? `<span class="feature-item"><i class="fa-solid fa-bed"></i> ${d.quartos} Qts</span>` : ''}
+                            ${d.banheiros ? `<span class="feature-item"><i class="fa-solid fa-bath"></i> ${d.banheiros} Banh</span>` : ''}
+                            ${d.vagas ? `<span class="feature-item"><i class="fa-solid fa-car"></i> ${d.vagas} Vag</span>` : ''}
+                        </div>
+                        
+                        <button class="btn-whatsapp-property">
+                            <i class="fa-brands fa-whatsapp"></i> Tenho Interesse
+                        </button>
+                    </div>
+                `;
+
+                // Bind click event listener programmatically
+                const btnWhats = card.querySelector('.btn-whatsapp-property');
+                const msgWhatsapp = `Olá tudo bem , tenho interesse no imóvel ${d.titulo || ''} , ${d.endereco || ''}`;
+                btnWhats.addEventListener('click', () => {
+                    abrirWhatsAppUniversal(NUMERO_WHATSAPP, msgWhatsapp);
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function parseValor(str) {
+            if (!str) return 0;
+            let limpo = str.toString().replace(/[R$\s]/g, '');
+            if (limpo.includes(',') && limpo.includes('.')) {
+                limpo = limpo.replace(/\./g, '').replace(/,/g, '.');
+            } else if (limpo.includes(',')) {
+                limpo = limpo.replace(/,/g, '.');
+            }
+            return parseFloat(limpo) || 0;
+        }
+
+        function filtrarOfertas() {
+            const filterNegocio = document.getElementById('filterNegocio').value;
+            const filterTipoImovel = document.getElementById('filterTipoImovel').value;
+            const filterValorMin = parseFloat(document.getElementById('filterValorMin').value) || null;
+            const filterValorMax = parseFloat(document.getElementById('filterValorMax').value) || null;
+            const filterCondoMax = parseFloat(document.getElementById('filterCondoMax').value) || null;
+            const filterQuartos = document.getElementById('filterQuartos').value;
+            const filterVagas = document.getElementById('filterVagas').value;
+            const filterBanheiros = document.getElementById('filterBanheiros').value;
+            const filterMobiliado = document.getElementById('filterMobiliado').value;
+            const filterSuite = document.getElementById('filterSuite').value;
+            const filterProximoMetro = document.getElementById('filterProximoMetro').value;
+
+            let filtrados = ofertasGlobais;
+
+            if (filterNegocio !== 'Todos') {
+                filtrados = filtrados.filter(o => o.dados && o.dados.tipo_negocio === filterNegocio);
+            }
+
+            if (filterTipoImovel !== 'Todos') {
+                filtrados = filtrados.filter(o => o.dados && o.dados.tipo_imovel === filterTipoImovel);
+            }
+
+            if (filterValorMin !== null) {
+                filtrados = filtrados.filter(o => o.dados && parseValor(o.dados.valor) >= filterValorMin);
+            }
+
+            if (filterValorMax !== null) {
+                filtrados = filtrados.filter(o => o.dados && parseValor(o.dados.valor) <= filterValorMax);
+            }
+
+            if (filterCondoMax !== null) {
+                filtrados = filtrados.filter(o => o.dados && parseValor(o.dados.condominio) <= filterCondoMax);
+            }
+
+            if (filterQuartos !== 'Todos') {
+                const minQuartos = parseInt(filterQuartos);
+                filtrados = filtrados.filter(o => o.dados && parseInt(o.dados.quartos) >= minQuartos);
+            }
+
+            if (filterVagas !== 'Todos') {
+                const minVagas = parseInt(filterVagas);
+                filtrados = filtrados.filter(o => o.dados && parseInt(o.dados.vagas) >= minVagas);
+            }
+
+            if (filterBanheiros !== 'Todos') {
+                const minBanheiros = parseInt(filterBanheiros);
+                filtrados = filtrados.filter(o => o.dados && parseInt(o.dados.banheiros) >= minBanheiros);
+            }
+
+            if (filterMobiliado !== 'Todos') {
+                filtrados = filtrados.filter(o => o.dados && (o.dados.mobiliado || 'N') === filterMobiliado);
+            }
+
+            if (filterSuite !== 'Todos') {
+                filtrados = filtrados.filter(o => o.dados && (o.dados.suites || 'N') === filterSuite);
+            }
+
+            if (filterProximoMetro !== 'Todos') {
+                filtrados = filtrados.filter(o => o.dados && (o.dados.proximo_metro || 'N') === filterProximoMetro);
+            }
+
+            renderizarOfertas(filtrados);
+        }
+
+        // Init
+        carregarOfertas();
+
+        // ========== GALERIA DE FOTOS (LIGHTBOX) ==========
+        let imagensGaleriaAtiva = [];
+        let indexGaleriaAtiva = 0;
+        let ofertaIdAtiva = null;
+
+        function abrirGaleria(ofertaId, imagensIds) {
+            ofertaIdAtiva = ofertaId;
+            imagensGaleriaAtiva = imagensIds || [1];
+            indexGaleriaAtiva = 0;
+            
+            const modal = document.getElementById('galleryModal');
+            const mainImg = document.getElementById('galleryMainImg');
+            const thumbsContainer = document.getElementById('galleryThumbs');
+            
+            // Definir imagem principal inicial
+            mainImg.src = `/img/oferta/${ofertaId}/${imagensGaleriaAtiva[0]}`;
+            
+            // Construir miniaturas na barra inferior
+            thumbsContainer.innerHTML = '';
+            imagensGaleriaAtiva.forEach((imgId, idx) => {
+                const thumb = document.createElement('div');
+                thumb.className = `gallery-thumb ${idx === 0 ? 'active' : ''}`;
+                thumb.onclick = () => mudarImagemGaleria(idx);
+                thumb.innerHTML = `<img src="/img/oferta/${ofertaId}/${imgId}" alt="Miniatura ${idx + 1}">`;
+                thumbsContainer.appendChild(thumb);
+            });
+
+            // Preencher detalhes do imóvel
+            const oferta = ofertasGlobais.find(o => o.id === ofertaId);
+            if (oferta) {
+                const d = oferta.dados || {};
+                document.getElementById('galleryTitle').textContent = d.titulo || 'Sem Título';
+                document.getElementById('galleryAddress').innerHTML = `<i class="fa-solid fa-location-dot"></i> ${d.endereco || 'Endereço não informado'}`;
+                
+                const grid = document.getElementById('galleryFeaturesGrid');
+                grid.innerHTML = '';
+                
+                if (d.area) {
+                    grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-ruler-combined"></i> ${d.area} m²</div>`;
+                }
+                if (d.quartos) {
+                    grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-bed"></i> ${d.quartos} Quartos</div>`;
+                }
+                if (d.banheiros) {
+                    grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-bath"></i> ${d.banheiros} Banheiros</div>`;
+                }
+                if (d.vagas) {
+                    grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-car"></i> ${d.vagas} Vagas</div>`;
+                }
+                if (d.condominio) {
+                    grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-hand-holding-dollar"></i> Cond: R$ ${d.condominio}</div>`;
+                }
+                
+                // Novos campos
+                const mobText = d.mobiliado === 'S' ? 'Sim' : 'Não';
+                grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-couch"></i> Mobiliado: ${mobText}</div>`;
+                
+                const suitesText = d.suites === 'S' ? `Sim (${d.suites_qtd || 1})` : 'Não';
+                grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-door-open"></i> Suítes: ${suitesText}</div>`;
+                
+                if (d.duplex && d.duplex !== 'NA') {
+                    const duplexText = d.duplex === 'S' ? 'Sim' : 'Não';
+                    grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-layer-group"></i> Duplex: ${duplexText}</div>`;
+                }
+                if (d.triplex && d.triplex !== 'NA') {
+                    const triplexText = d.triplex === 'S' ? 'Sim' : 'Não';
+                    grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-layer-group"></i> Triplex: ${triplexText}</div>`;
+                }
+                
+                // Próximo ao Metrô
+                const metroText = d.proximo_metro === 'S' ? 'Sim' : 'Não';
+                grid.innerHTML += `<div class="feature-item"><i class="fa-solid fa-train-subway"></i> Próximo ao metrô: ${metroText}</div>`;
+                
+                // WhatsApp redirect custom message
+                const msgWhatsapp = `Olá tudo bem , tenho interesse no imóvel ${d.titulo || ''} , ${d.endereco || ''}`;
+                document.getElementById('galleryInterestBtn').onclick = () => abrirWhatsAppUniversal(NUMERO_WHATSAPP, msgWhatsapp);
+            }
+            
+            modal.classList.add('active');
+            
+            // Ativar atalhos do teclado
+            document.addEventListener('keydown', handleKeyPressGaleria);
+        }
+
+        function fecharGaleria() {
+            const modal = document.getElementById('galleryModal');
+            modal.classList.remove('active');
+            document.removeEventListener('keydown', handleKeyPressGaleria);
+        }
+
+        function mudarImagemGaleria(idx) {
+            if (idx < 0 || idx >= imagensGaleriaAtiva.length) return;
+            indexGaleriaAtiva = idx;
+            
+            const mainImg = document.getElementById('galleryMainImg');
+            mainImg.src = `/img/oferta/${ofertaIdAtiva}/${imagensGaleriaAtiva[idx]}`;
+            
+            // Atualizar miniatura ativa
+            const thumbs = document.querySelectorAll('.gallery-thumb');
+            thumbs.forEach((t, i) => {
+                if (i === idx) {
+                    t.classList.add('active');
+                    t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    t.classList.remove('active');
+                }
+            });
+        }
+
+        function navegarGaleria(direcao) {
+            let novoIndex = indexGaleriaAtiva + direcao;
+            if (novoIndex < 0) novoIndex = imagensGaleriaAtiva.length - 1;
+            if (novoIndex >= imagensGaleriaAtiva.length) novoIndex = 0;
+            mudarImagemGaleria(novoIndex);
+        }
+
+        function handleKeyPressGaleria(e) {
+            if (e.key === 'Escape') fecharGaleria();
+            if (e.key === 'ArrowLeft') navegarGaleria(-1);
+            if (e.key === 'ArrowRight') navegarGaleria(1);
+        }
+    </script>
+
+    <!-- Modal de Galeria de Fotos -->
+    <div id="galleryModal" class="gallery-modal" onclick="if(event.target === this) fecharGaleria()">
+        <button class="gallery-close" onclick="fecharGaleria()">&times;</button>
+        <div class="gallery-container">
+            <div class="gallery-main-image-wrapper">
+                <button class="gallery-nav-btn gallery-prev" onclick="navegarGaleria(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                <img id="galleryMainImg" class="gallery-main-image" src="" alt="Imagem Ampliada">
+                <button class="gallery-nav-btn gallery-next" onclick="navegarGaleria(1)"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <div id="galleryThumbs" class="gallery-thumbnails"></div>
+            
+            <!-- Detalhes do Imóvel no Modal -->
+            <div id="galleryDetails" class="gallery-details" style="margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; color: #fff; text-align: left; max-width: 100%; box-sizing: border-box;">
+                <h3 id="galleryTitle" style="margin-top:0; font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 5px;">Título do Imóvel</h3>
+                <p id="galleryAddress" style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;"><i class="fa-solid fa-location-dot"></i> Endereço</p>
+                <div id="galleryFeaturesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 14px; margin-bottom: 20px;">
+                </div>
+                <div style="text-align: center;">
+                    <button id="galleryInterestBtn" class="btn btn-primary" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 12px; background: var(--primary); border: none; color: #000; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 15px;">
+                        <i class="fa-brands fa-whatsapp"></i> Tenho Interesse
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

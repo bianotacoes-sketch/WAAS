@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Agenda | {{ cliente.nome_fantasia }}</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: {{ cores.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cores.cor_secundaria | default('#764ba2') }};
+            --border: #334155;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            max-height: 40px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text i {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .welcome-msg {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .welcome-msg strong {
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .logout-btn {
+            background-color: #f43f5e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #e11d48;
+        }
+
+        .container {
+            max-width: 1600px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        .config-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .config-card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .dias-semana-list {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .dia-checkbox {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .dia-checkbox:has(input:checked) {
+            border-color: var(--primary);
+            background-color: rgba(99, 102, 241, 0.05);
+            color: var(--primary);
+        }
+
+        .dia-checkbox input {
+            cursor: pointer;
+        }
+
+        .btn-action {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            height: 42px;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-action:hover {
+            background-color: var(--secondary);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+
+        .week-navigation {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .week-nav-btn {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .week-nav-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .week-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .week-days-grid {
+            margin-bottom: 32px;
+            width: 100%;
+        }
+
+        /* Agenda daily tab styles */
+        .agenda-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .agenda-tabs::-webkit-scrollbar {
+            height: 4px;
+        }
+        
+        .agenda-tabs::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .agenda-tab-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 12px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            min-width: 130px;
+            text-align: left;
+        }
+
+        .agenda-tab-btn:hover {
+            border-color: var(--primary);
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .agenda-tab-btn.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        
+        .agenda-tab-btn.active .tab-date {
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .tab-day-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .tab-date {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #64748b;
+            display: inline-block;
+        }
+
+        .status-dot.active {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Two column day panel layout */
+        .day-panel {
+            display: grid;
+            grid-template-columns: 1.7fr 1.3fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .day-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .panel-card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .panel-card-title i {
+            color: var(--primary);
+        }
+
+        .btn-toggle-day {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toggle-day:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Grid de horários moderno */
+        .horarios-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 8px;
+        }
+
+        .horario-card-btn {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            color: var(--text-muted);
+            user-select: none;
+        }
+
+        .horario-card-btn:hover:not(.bloqueado) {
+            border-color: var(--primary);
+            color: var(--text-main);
+            transform: translateY(-1px);
+        }
+
+        .horario-card-btn.ativo {
+            background-color: rgba(16, 185, 129, 0.12);
+            border: 2px solid var(--success);
+            color: #a7f3d0;
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.05);
+        }
+
+        .horario-card-btn.bloqueado {
+            background-color: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        .horario-card-btn input {
+            display: none;
+        }
+
+        /* Estado Inativo Limpo */
+        .day-inactive-placeholder {
+            background-color: var(--card-bg);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .day-inactive-placeholder i {
+            font-size: 40px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .day-inactive-placeholder h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .day-inactive-placeholder p {
+            font-size: 14px;
+            color: var(--text-muted);
+            max-width: 400px;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .interval-config-day {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .interval-config-day label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .interval-config-day select {
+            width: 100%;
+            padding: 6px 10px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .btn-edit-hours {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-top: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-edit-hours:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .day-info-text {
+            font-size: 10px;
+            color: var(--text-muted);
+            background-color: rgba(245, 158, 11, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .intervalo-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .intervalo-row input {
+            flex-grow: 1;
+            padding: 6px 8px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 11px;
+            font-family: inherit;
+        }
+
+        .btn-remove-interval {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-remove-interval:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-add-interval {
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-add-interval:hover {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .save-bar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            padding: 0 24px;
+            z-index: 100;
+        }
+
+        .save-bar-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--success);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .save-bar-btn:hover {
+            background-color: var(--success-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -3px rgba(16, 185, 129, 0.4);
+        }
+
+        .save-bar-btn:active {
+            transform: translateY(0);
+        }
+
+        .toast-message {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 1000;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 900px) {
+            header {
+                padding: 16px 24px;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .user-nav {
+                flex-direction: column;
+                width: 100%;
+            }
+            .nav-links {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            {% if cliente.logo_url %}
+                <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
+            {% else %}
+                <div class="logo-text">
+                    <i class="fa-solid fa-scissors"></i>
+                    <span>{{ cliente.nome_fantasia }}</span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="user-nav">
+            <span class="welcome-msg">Olá, <strong>{{ admin_nome }}</strong></span>
+            
+            <div class="nav-links">
+                <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
+                <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-scissors"></i> Serviços</a>
+                <a href="/admin/promocoes" class="nav-link"><i class="fa-solid fa-tags"></i> Promoções</a>
+            </div>
+            
+            <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        </div>
+    </header>
+
+    <div class="container" style="margin-bottom: 100px;">
+        <div class="panel-title">
+            <i class="fa-solid fa-gears"></i> Configurar Agenda de Atendimento
+        </div>
+
+        <div class="config-card">
+            <div class="config-card-title">Configurações Padrão da Grade de Horários</div>
+            <div class="config-grid">
+                <div class="form-group">
+                    <label>Hora de Início</label>
+                    <input type="time" id="horaInicio" value="08:00">
+                </div>
+                <div class="form-group">
+                    <label>Hora de Término</label>
+                    <input type="time" id="horaFim" value="20:00">
+                </div>
+                <div class="form-group">
+                    <label>Intervalo entre Consultas</label>
+                    <select id="intervaloTempo">
+                        <option value="15">15 minutos</option>
+                        <option value="30" selected>30 minutos</option>
+                        <option value="45">45 minutos</option>
+                        <option value="60">60 minutos</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Dias de Atendimento Ativos</label>
+                    <div class="dias-semana-list" id="diasPadrao">
+                        <label class="dia-checkbox"><input type="checkbox" value="0"> Dom</label>
+                        <label class="dia-checkbox"><input type="checkbox" value="1" checked> Seg</label>
+                        <label class="dia-checkbox"><input type="checkbox" value="2" checked> Ter</label>
+                        <label class="dia-checkbox"><input type="checkbox" value="3" checked> Qua</label>
+                        <label class="dia-checkbox"><input type="checkbox" value="4" checked> Qui</label>
+                        <label class="dia-checkbox"><input type="checkbox" value="5" checked> Sex</label>
+                        <label class="dia-checkbox"><input type="checkbox" value="6" checked> Sáb</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Bloqueio Almoço/Intervalo</label>
+                    <input type="text" id="intervaloPadrao" placeholder="HH:MM-HH:MM" value="12:00-13:00">
+                </div>
+                <div>
+                    <button class="btn-action" onclick="aplicarConfiguracaoPadrao()"><i class="fa-solid fa-bullseye"></i> Aplicar Configuração</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="week-navigation">
+            <button class="week-nav-btn" onclick="mudarSemana(-1)"><i class="fa-solid fa-chevron-left"></i> Semana Anterior</button>
+            <div class="week-title" id="weekTitle"><i class="fa-regular fa-calendar-days"></i> Carregando período...</div>
+            <button class="week-nav-btn" onclick="mudarSemana(1)">Próxima Semana <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <div id="week-days" class="week-days-grid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin"></i> Aguarde, carregando cronograma da semana...
+            </div>
+        </div>
+
+        <div class="save-bar">
+            <button class="save-bar-btn" onclick="salvarSemana()"><i class="fa-solid fa-floppy-disk"></i> Salvar Cronograma Completo</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast-message" style="display: none;"></div>
+
+    <script>
+        let dataReferencia = '{{ data_referencia }}';
+        let cronogramaAtual = {};
+        const nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        let diaSelecionado = null;
+        
+        function converterParaMinutos(horaStr) {
+            const [h, m] = horaStr.split(':');
+            return parseInt(h) * 60 + parseInt(m);
+        }
+        
+        function estaEmIntervalo(horario, intervalos) {
+            if (!intervalos || intervalos.length === 0) return false;
+            const horarioMinutos = converterParaMinutos(horario);
+            
+            for (let intervalo of intervalos) {
+                if (!intervalo || !intervalo.includes('-')) continue;
+                const [inicio, fim] = intervalo.split('-');
+                const inicioMinutos = converterParaMinutos(inicio);
+                const fimMinutos = converterParaMinutos(fim);
+                
+                if (horarioMinutos >= inicioMinutos && horarioMinutos < fimMinutos) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function gerarHorarios(inicio, fim, intervaloMinutos) {
+            const horarios = [];
+            let horaAtual = new Date(`2000-01-01 ${inicio}`);
+            const horaFim = new Date(`2000-01-01 ${fim}`);
+            
+            while (horaAtual <= horaFim) {
+                const horaStr = horaAtual.toTimeString().slice(0, 5);
+                horarios.push(horaStr);
+                horaAtual = new Date(horaAtual.getTime() + intervaloMinutos * 60000);
+            }
+            return horarios;
+        }
+        
+        function getDiasSemana(dataInicio) {
+            const dias = [];
+            const inicio = new Date(dataInicio + 'T00:00:00');
+            for (let i = 0; i < 7; i++) {
+                const data = new Date(inicio);
+                data.setDate(inicio.getDate() + i);
+                dias.push({
+                    data: data.toISOString().split('T')[0],
+                    nome: nomesDias[data.getDay()],
+                    diaSemana: data.getDay(),
+                    dataExibicao: data.toLocaleDateString('pt-BR')
+                });
+            }
+            return dias;
+        }
+        
+        function aplicarConfiguracaoPadrao() {
+            const horaInicio = document.getElementById('horaInicio').value;
+            const horaFim = document.getElementById('horaFim').value;
+            const intervaloTempo = parseInt(document.getElementById('intervaloTempo').value);
+            const intervaloPadrao = document.getElementById('intervaloPadrao').value;
+            
+            const diasAtivos = Array.from(document.querySelectorAll('#diasPadrao input:checked')).map(cb => parseInt(cb.value));
+            const horariosGerados = gerarHorarios(horaInicio, horaFim, intervaloTempo);
+            const dias = getDiasSemana(dataReferencia);
+            
+            dias.forEach(dia => {
+                const ativo = diasAtivos.includes(dia.diaSemana);
+                const intervalos = ativo ? [intervaloPadrao] : [];
+                const horariosFiltrados = ativo ? horariosGerados.filter(h => !estaEmIntervalo(h, intervalos)) : [];
+                
+                cronogramaAtual[dia.data] = {
+                    ativo: ativo,
+                    intervalo_minutos: intervaloTempo,
+                    hora_inicio: horaInicio,
+                    hora_fim: horaFim,
+                    horarios_disponiveis: horariosFiltrados,
+                    intervalos: intervalos
+                };
+            });
+            
+            renderizarSemana();
+            mostrarMensagem('Configuração padrão aplicada com sucesso!', 'sucesso');
+        }
+        
+        function personalizarIntervaloDia(data, novosMinutos) {
+            if (!cronogramaAtual[data]) {
+                cronogramaAtual[data] = { ativo: true, horarios_disponiveis: [], intervalos: [] };
+            }
+            
+            const config = cronogramaAtual[data];
+            const inicio = config.hora_inicio || '08:00';
+            const fim = config.hora_fim || '20:00';
+            const intervalos = config.intervalos || [];
+            
+            config.intervalo_minutos = novosMinutos;
+            const todosHorarios = gerarHorarios(inicio, fim, novosMinutos);
+            config.horarios_disponiveis = todosHorarios.filter(h => !estaEmIntervalo(h, intervalos));
+            
+            renderizarSemana();
+            mostrarMensagem(`Intervalo do dia alterado para ${novosMinutos} minutos`, 'sucesso');
+        }
+        
+        function personalizarHorariosDia(data) {
+            const config = cronogramaAtual[data];
+            const novoInicio = prompt('Defina o horário de início (HH:MM):', config?.hora_inicio || '08:00');
+            const novoFim = prompt('Defina o horário de fim (HH:MM):', config?.hora_fim || '20:00');
+            if (novoInicio && novoFim) {
+                if (!cronogramaAtual[data]) cronogramaAtual[data] = { ativo: true, intervalos: [], intervalo_minutos: 30 };
+                cronogramaAtual[data].hora_inicio = novoInicio;
+                cronogramaAtual[data].hora_fim = novoFim;
+                const intervalo = cronogramaAtual[data].intervalo_minutos || 30;
+                const intervalos = cronogramaAtual[data].intervalos || [];
+                const todosHorarios = gerarHorarios(novoInicio, novoFim, intervalo);
+                cronogramaAtual[data].horarios_disponiveis = todosHorarios.filter(h => !estaEmIntervalo(h, intervalos));
+                renderizarSemana();
+            }
+        }
+        
+        // Ativar/desativar dia de funcionamento
+        function toggleDia(data, ativo) {
+            if (!cronogramaAtual[data]) {
+                cronogramaAtual[data] = { horarios_disponiveis: [], intervalos: [] };
+            }
+            cronogramaAtual[data].ativo = ativo;
+            if (!ativo) cronogramaAtual[data].horarios_disponiveis = [];
+            renderizarSemana();
+        }
+        
+        function carregarCronograma() {
+            fetch(`/admin/api/carregar_cronograma?data_inicio=${dataReferencia}`)
+                .then(response => response.json())
+                .then(data => {
+                    cronogramaAtual = data.cronograma || {};
+                    renderizarSemana();
+                })
+                .catch(() => { cronogramaAtual = {}; renderizarSemana(); });
+        }
+        
+        function renderizarSemana() {
+            const dias = getDiasSemana(dataReferencia);
+            const container = document.getElementById('week-days');
+            
+            const primeira = new Date(dias[0].data + 'T00:00:00');
+            const ultima = new Date(dias[6].data + 'T00:00:00');
+            document.getElementById('weekTitle').innerHTML = `<i class="fa-regular fa-calendar-days"></i> ${primeira.toLocaleDateString('pt-BR')} até ${ultima.toLocaleDateString('pt-BR')}`;
+            
+            // Garantir que todos os dias tenham configurações padrão se vazias
+            dias.forEach(dia => {
+                if (!cronogramaAtual[dia.data]) {
+                    cronogramaAtual[dia.data] = {
+                        ativo: dia.diaSemana !== 0,
+                        intervalo_minutos: 30,
+                        hora_inicio: '08:00',
+                        hora_fim: '20:00',
+                        horarios_disponiveis: dia.diaSemana !== 0 ? gerarHorarios('08:00', '20:00', 30) : [],
+                        intervalos: dia.diaSemana !== 0 ? ['12:00-13:00'] : []
+                    };
+                }
+            });
+
+            // Definir o dia selecionado padrão
+            const hojeStr = new Date().toISOString().split('T')[0];
+            if (!diaSelecionado || !dias.some(d => d.data === diaSelecionado)) {
+                const temHoje = dias.some(d => d.data === hojeStr);
+                diaSelecionado = temHoje ? hojeStr : (dias[1] ? dias[1].data : dias[0].data);
+            }
+
+            container.innerHTML = '';
+
+            // 1. Renderizar as Abas Diárias
+            const tabsContainer = document.createElement('div');
+            tabsContainer.className = 'agenda-tabs';
+            
+            dias.forEach(dia => {
+                const config = cronogramaAtual[dia.data];
+                const isAtivo = config.ativo !== false;
+                const isSelected = dia.data === diaSelecionado;
+                
+                const tabBtn = document.createElement('button');
+                tabBtn.className = `agenda-tab-btn ${isSelected ? 'active' : ''}`;
+                tabBtn.onclick = (e) => {
+                    e.preventDefault();
+                    diaSelecionado = dia.data;
+                    renderizarSemana();
+                };
+                
+                tabBtn.innerHTML = `
+                    <div class="tab-day-header">
+                        <span>${dia.nome.slice(0, 3)}</span>
+                        <span class="status-dot ${isAtivo ? 'active' : ''}"></span>
+                    </div>
+                    <span class="tab-date">${dia.dataExibicao.slice(0, 5)}</span>
+                `;
+                tabsContainer.appendChild(tabBtn);
+            });
+            container.appendChild(tabsContainer);
+
+            // 2. Renderizar o Painel do Dia Ativo
+            const diaAtivoObj = dias.find(d => d.data === diaSelecionado);
+            const configAtivo = cronogramaAtual[diaSelecionado];
+            const isAtivo = configAtivo.ativo !== false;
+            
+            const panel = document.createElement('div');
+            panel.className = 'day-panel';
+
+            if (!isAtivo) {
+                // Dia Inativo
+                panel.innerHTML = `
+                    <div class="day-inactive-placeholder">
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                        <h3>Este dia está desativado</h3>
+                        <p>Nenhum horário estará disponível para agendamento neste dia. Deseja ativar o funcionamento?</p>
+                        <button class="btn-toggle-day" onclick="toggleDia('${diaSelecionado}', true)" style="background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px;">
+                            <i class="fa-solid fa-toggle-on"></i> Ativar Funcionamento
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Dia Ativo
+                const intervaloAtual = configAtivo.intervalo_minutos || 30;
+                const horaInicio = configAtivo.hora_inicio || '08:00';
+                const horaFim = configAtivo.hora_fim || '20:00';
+                const intervalos = configAtivo.intervalos || [];
+                
+                const todosHorarios = gerarHorarios(horaInicio, horaFim, intervaloAtual);
+                const horariosDisponiveis = todosHorarios.filter(h => !estaEmIntervalo(h, intervalos));
+
+                // Coluna da Esquerda: Grade de Horários
+                let horariosHtml = '<div class="horarios-cards-grid">';
+                todosHorarios.forEach(horario => {
+                    const emIntervalo = estaEmIntervalo(horario, intervalos);
+                    const isChecked = !emIntervalo && configAtivo.horarios_disponiveis?.includes(horario);
+                    const classeBloqueado = emIntervalo ? 'bloqueado' : '';
+                    const textoIntervalo = emIntervalo ? ' <i class="fa-solid fa-ban" style="font-size: 10px;"></i>' : '';
+                    
+                    horariosHtml += `
+                        <label class="horario-card-btn ${isChecked ? 'ativo' : ''} ${classeBloqueado}">
+                            <input type="checkbox" 
+                                   value="${horario}" 
+                                   ${isChecked ? 'checked' : ''} 
+                                   ${emIntervalo ? 'disabled' : ''} 
+                                   onchange="this.parentElement.classList.toggle('ativo', this.checked); atualizarHorario('${diaSelecionado}', '${horario}', this.checked)">
+                            <span>${horario} ${textoIntervalo}</span>
+                        </label>
+                    `;
+                });
+                horariosHtml += '</div>';
+
+                // Coluna da Direita: Configurações e Bloqueios
+                let intervalosHtml = '<div class="intervalos-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">';
+                intervalos.forEach((intervalo, idx) => {
+                    intervalosHtml += `
+                        <div class="intervalo-row">
+                            <input type="text" value="${intervalo}" placeholder="HH:MM-HH:MM" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 13px;" onchange="atualizarIntervalo('${diaSelecionado}', ${idx}, this.value)">
+                            <button class="btn-remove-interval" onclick="removerIntervalo('${diaSelecionado}', ${idx})"><i class="fa-regular fa-trash-can"></i></button>
+                        </div>
+                    `;
+                });
+                intervalosHtml += '</div>';
+                intervalosHtml += `<button class="btn-add-interval" onclick="adicionarIntervalo('${diaSelecionado}')"><i class="fa-solid fa-plus"></i> Adicionar Bloqueio</button>`;
+
+                panel.innerHTML = `
+                    <div class="panel-card">
+                        <div class="panel-card-title">
+                            <i class="fa-regular fa-clock"></i> Grade de Horários para ${diaAtivoObj.nome} (${diaAtivoObj.dataExibicao})
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                            Marque os horários que deseja disponibilizar para agendamento. Horários em bloqueios são sinalizados com <i class="fa-solid fa-ban" style="color: var(--danger)"></i>.
+                        </p>
+                        ${horariosHtml}
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <div class="panel-card">
+                            <div class="panel-card-title">
+                                <i class="fa-solid fa-gears"></i> Funcionamento do Dia
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 12px; background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px;">
+                                <span style="font-size: 13px; font-weight: 600;">Status do Dia</span>
+                                <button class="btn-toggle-day" onclick="toggleDia('${diaSelecionado}', false)" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--danger);">
+                                    <i class="fa-solid fa-toggle-on"></i> Desativar Dia
+                                </button>
+                            </div>
+
+                            <div class="interval-config-day">
+                                <label>Intervalo Padrão:</label>
+                                <select onchange="personalizarIntervaloDia('${diaSelecionado}', parseInt(this.value))">
+                                    <option value="15" ${intervaloAtual === 15 ? 'selected' : ''}>15 min</option>
+                                    <option value="30" ${intervaloAtual === 30 ? 'selected' : ''}>30 min</option>
+                                    <option value="45" ${intervaloAtual === 45 ? 'selected' : ''}>45 min</option>
+                                    <option value="60" ${intervaloAtual === 60 ? 'selected' : ''}>60 min</option>
+                                </select>
+                                <button class="btn-edit-hours" onclick="personalizarHorariosDia('${diaSelecionado}')"><i class="fa-solid fa-pencil"></i> Editar Turno (Início/Fim)</button>
+                            </div>
+                        </div>
+
+                        <div class="panel-card">
+                            <div class="panel-card-title">
+                                <i class="fa-solid fa-ban"></i> Bloqueios e Intervalos
+                            </div>
+                            <div class="day-info-text" style="margin-bottom: 16px;">
+                                Bloqueie horários (ex: almoço, folgas) definindo intervalos no formato <strong>HH:MM-HH:MM</strong> (Ex: 12:00-13:00).
+                            </div>
+                            ${intervalosHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            container.appendChild(panel);
+        }
+        
+        function atualizarHorario(data, horario, isChecked) {
+            if (!cronogramaAtual[data]) cronogramaAtual[data] = { ativo: true, horarios_disponiveis: [], intervalos: [] };
+            if (isChecked) {
+                if (!cronogramaAtual[data].horarios_disponiveis.includes(horario))
+                    cronogramaAtual[data].horarios_disponiveis.push(horario);
+            } else {
+                const index = cronogramaAtual[data].horarios_disponiveis.indexOf(horario);
+                if (index > -1) cronogramaAtual[data].horarios_disponiveis.splice(index, 1);
+            }
+            cronogramaAtual[data].horarios_disponiveis.sort();
+        }
+        
+        function adicionarIntervalo(data) {
+            if (!cronogramaAtual[data]) cronogramaAtual[data] = { ativo: true, horarios_disponiveis: [], intervalos: [] };
+            if (!cronogramaAtual[data].intervalos) cronogramaAtual[data].intervalos = [];
+            cronogramaAtual[data].intervalos.push('');
+            renderizarSemana();
+        }
+        
+        function removerIntervalo(data, index) {
+            if (cronogramaAtual[data]?.intervalos) {
+                cronogramaAtual[data].intervalos.splice(index, 1);
+                const config = cronogramaAtual[data];
+                const inicio = config.hora_inicio || '08:00';
+                const fim = config.hora_fim || '20:00';
+                const intervalo = config.intervalo_minutos || 30;
+                const todosHorarios = gerarHorarios(inicio, fim, intervalo);
+                config.horarios_disponiveis = todosHorarios.filter(h => !estaEmIntervalo(h, config.intervalos));
+                renderizarSemana();
+            }
+        }
+        
+        function atualizarIntervalo(data, index, valor) {
+            if (cronogramaAtual[data]?.intervalos) {
+                cronogramaAtual[data].intervalos[index] = valor;
+                const config = cronogramaAtual[data];
+                const inicio = config.hora_inicio || '08:00';
+                const fim = config.hora_fim || '20:00';
+                const intervalo = config.intervalo_minutos || 30;
+                const todosHorarios = gerarHorarios(inicio, fim, intervalo);
+                config.horarios_disponiveis = todosHorarios.filter(h => !estaEmIntervalo(h, config.intervalos));
+                renderizarSemana();
+            }
+        }
+        
+        function mudarSemana(delta) {
+            const data = new Date(dataReferencia + 'T00:00:00');
+            data.setDate(data.getDate() + (delta * 7));
+            dataReferencia = data.toISOString().split('T')[0];
+            carregarCronograma();
+        }
+        
+        function salvarSemana() {
+            const configSemana = { data_inicio: dataReferencia, config_semana: { dias: {} } };
+            getDiasSemana(dataReferencia).forEach(dia => {
+                if (cronogramaAtual[dia.data]) configSemana.config_semana.dias[dia.data] = cronogramaAtual[dia.data];
+            });
+            
+            fetch('/admin/api/salvar_semana', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(configSemana)
+            })
+            .then(response => response.json())
+            .then(data => mostrarMensagem(data.mensagem, data.sucesso ? 'sucesso' : 'erro'))
+            .catch(error => mostrarMensagem('Erro ao salvar cronograma.', 'erro'));
+        }
+        
+        function mostrarMensagem(msg, tipo) {
+            const toast = document.getElementById('toast');
+            toast.style.background = tipo === 'sucesso' ? 'var(--success)' : 'var(--danger)';
+            toast.innerHTML = (tipo === 'sucesso' ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-xmark"></i> ') + msg;
+            toast.style.display = 'flex';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+        
+        carregarCronograma();
+    </script>
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imagens dos Serviços | {{ cliente.nome_fantasia }}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: {{ cores.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cores.cor_secundaria | default('#764ba2') }};
+            --border: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand { display: flex; align-items: center; gap: 12px; }
+
+        .logo-text {
+            font-size: 18px; font-weight: 700; font-family: 'Outfit', sans-serif;
+            color: var(--text-main); display: flex; align-items: center; gap: 8px;
+        }
+
+        .logo-text i { font-size: 20px; color: var(--primary); }
+
+        .nav-links { display: flex; gap: 8px; }
+
+        .nav-link {
+            background-color: var(--bg-color); border: 1px solid var(--border);
+            color: var(--text-main); padding: 8px 16px; border-radius: 8px;
+            text-decoration: none; font-size: 14px; font-weight: 600;
+            transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .nav-link:hover { border-color: var(--primary); color: var(--primary); }
+
+        .container {
+            max-width: 900px; width: 100%; margin: 40px auto; padding: 0 24px; flex-grow: 1;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800;
+            margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
+        }
+        .panel-title i { color: var(--primary); }
+
+        .card {
+            background-color: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 12px; padding: 24px; margin-bottom: 24px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .form-group label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+        .form-group select {
+            width: 100%; padding: 10px 14px; background-color: var(--bg-color);
+            border: 1px solid var(--border); border-radius: 8px; color: var(--text-main);
+            font-size: 14px; font-family: inherit;
+        }
+        .form-group select:focus { outline: none; border-color: var(--primary); }
+
+        .image-upload-area {
+            border: 2px dashed var(--border); border-radius: 12px; padding: 40px;
+            text-align: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 20px;
+        }
+        .image-upload-area:hover { border-color: var(--primary); background-color: rgba(99, 102, 241, 0.05); }
+        .image-upload-area i { font-size: 32px; color: var(--primary); margin-bottom: 12px; }
+
+        .image-preview-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px; margin-top: 16px;
+        }
+        .image-preview-item {
+            position: relative; border-radius: 8px; overflow: hidden;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-color);
+        }
+        .image-preview-img-container {
+            width: 100%;
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            position: relative;
+        }
+        .image-preview-img-container img { width: 100%; height: 100%; object-fit: cover; }
+        .image-caption-input {
+            width: 100%;
+            padding: 6px 10px;
+            background-color: var(--bg-color);
+            border: none;
+            border-top: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+        }
+        .image-caption-input:focus {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; font-family: inherit;
+        }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-success:hover { background-color: #059669; }
+
+        .toast-message {
+            position: fixed; top: 24px; right: 24px; padding: 16px 24px;
+            border-radius: 8px; color: white; font-weight: 600; font-size: 14px;
+            z-index: 1001; display: flex; align-items: center; gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo-text">
+                <i class="fa-solid fa-images"></i>
+                <span>Imagens dos Serviços - {{ cliente.nome_fantasia }}</span>
+            </div>
+        </div>
+        <div class="nav-links">
+            <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Voltar ao Dashboard</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="panel-title">
+            <i class="fa-solid fa-images"></i> Gestão Visual de Serviços
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label>1. Selecione o Serviço</label>
+                <select id="selectServico" onchange="carregarImagensExistentes()">
+                    <option value="">Carregando serviços...</option>
+                </select>
+            </div>
+            
+            <div id="uploadSection" style="display: none; margin-top: 30px;">
+                <label style="font-size: 13px; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 8px;">2. Faça o upload das imagens (Máx: 15 fotos)</label>
+                
+                <div class="image-upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p style="font-weight: 600; margin-bottom: 5px;">Clique aqui para selecionar as imagens</p>
+                    <input type="file" id="fileInput" multiple accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+                
+                <div id="infoExistentes" style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;"></div>
+                
+                <div id="imagePreviewContainer" class="image-preview-grid" style="margin-bottom: 24px;"></div>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-success" onclick="salvarImagens()" style="flex: 1;"><i class="fa-solid fa-cloud-arrow-up"></i> Enviar e Salvar Imagens</button>
+                    <button id="btnSalvarComentarios" class="btn btn-primary" onclick="salvarComentarios()" style="flex: 1; display: none;"><i class="fa-solid fa-floppy-disk"></i> Salvar Legendas/Comentários</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast-message" style="display: none;"></div>
+
+    <script>
+        const empresaId = {{ session.get('empresa_id', 1) }};
+        const siteId = {{ session.get('site_id', 1) }};
+        let arquivosSelecionados = [];
+        let imagensIdsExistentes = [];
+        let comentariosAtuais = {};
+
+        function mostrarMensagem(msg, tipo) {
+            const toast = document.getElementById('toast');
+            toast.style.background = tipo === 'sucesso' ? 'var(--success)' : 'var(--danger)';
+            toast.innerHTML = (tipo === 'sucesso' ? '<i class="fa-solid fa-check"></i> ' : '<i class="fa-solid fa-xmark"></i> ') + msg;
+            toast.style.display = 'flex';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+
+        function carregarServicos() {
+            fetch('/admin/api/servicos')
+                .then(res => res.json())
+                .then(data => {
+                    if(data.sucesso) {
+                        const select = document.getElementById('selectServico');
+                        select.innerHTML = '<option value="">Selecione um serviço para gerenciar as imagens...</option>';
+                        data.servicos.forEach(s => {
+                            let servicoObj = typeof s === 'string' ? JSON.parse(s) : s;
+                            const nome = servicoObj.nome || 'Serviço Sem Nome';
+                            select.innerHTML += `<option value="${servicoObj.id}">${nome}</option>`;
+                        });
+                    }
+                });
+        }
+
+        function carregarImagensExistentes() {
+            const servicoId = document.getElementById('selectServico').value;
+            const uploadSection = document.getElementById('uploadSection');
+            
+            arquivosSelecionados = [];
+            imagensIdsExistentes = [];
+            comentariosAtuais = {};
+            document.getElementById('imagePreviewContainer').innerHTML = '';
+            document.getElementById('infoExistentes').innerHTML = '';
+            
+            if(!servicoId) {
+                uploadSection.style.display = 'none';
+                return;
+            }
+            
+            uploadSection.style.display = 'block';
+            
+            fetch(`/admin/api/servicos/${servicoId}/imagens/listar`)
+                .then(res => res.json())
+                .then(data => {
+                    if(data.sucesso) {
+                        imagensIdsExistentes = data.imagens_ids || [];
+                        comentariosAtuais = data.comentarios || {};
+                        renderizarImagensExistentesServico(servicoId, imagensIdsExistentes);
+                    }
+                });
+        }
+
+        function renderizarImagensExistentesServico(servicoId, imagensIds) {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            
+            const btnSalvar = document.getElementById('btnSalvarComentarios');
+            if(imagensIds && imagensIds.length > 0) {
+                if (btnSalvar) btnSalvar.style.display = 'inline-flex';
+                document.getElementById('infoExistentes').innerHTML = `<i class="fa-solid fa-circle-info"></i> Este serviço possui ${imagensIds.length} imagem(ns) salvas no banco de dados.`;
+                
+                imagensIds.forEach(idx => {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    
+                    const imgUrl = `/img/servico/${empresaId}/${siteId}/${servicoId}/${idx}`;
+                    const comentario = comentariosAtuais[idx] || '';
+                    
+                    div.innerHTML = `
+                        <div class="image-preview-img-container">
+                            <img src="${imgUrl}" alt="Foto ${idx}">
+                            <button onclick="excluirImagemServico(event, ${servicoId}, ${idx})" style="position: absolute; top: 4px; right: 4px; background: rgba(239, 68, 68, 0.9); border: none; border-radius: 50%; color: white; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px;" title="Excluir imagem">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        <input type="text" class="image-caption-input" placeholder="Adicionar legenda..." value="${comentario}" onchange="atualizarComentarioLocal(${idx}, this.value)">
+                    `;
+                    container.appendChild(div);
+                });
+            } else {
+                if (btnSalvar) btnSalvar.style.display = 'none';
+            }
+        }
+
+        function atualizarComentarioLocal(idx, valor) {
+            comentariosAtuais[idx] = valor.trim();
+        }
+
+        function salvarComentarios() {
+            const servicoId = document.getElementById('selectServico').value;
+            if(!servicoId) {
+                mostrarMensagem('Selecione um serviço primeiro.', 'erro');
+                return;
+            }
+            
+            fetch(`/admin/api/servicos/${servicoId}/imagens/comentarios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(comentariosAtuais)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.sucesso) {
+                    mostrarMensagem('Legendas/Comentários salvos com sucesso!', 'sucesso');
+                } else {
+                    mostrarMensagem('Erro ao salvar legendas.', 'erro');
+                }
+            });
+        }
+
+        function excluirImagemServico(event, servicoId, idx) {
+            event.stopPropagation();
+            if(confirm('Tem certeza que deseja excluir esta imagem do serviço?')) {
+                fetch(`/admin/api/servicos/${servicoId}/imagens/${idx}`, {
+                    method: 'DELETE'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        mostrarMensagem('Imagem excluída com sucesso!', 'sucesso');
+                        carregarImagensExistentes();
+                    } else {
+                        mostrarMensagem('Erro ao excluir imagem.', 'erro');
+                    }
+                });
+            }
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const maxAllowed = 15;
+            
+            if(files.length + arquivosSelecionados.length + imagensIdsExistentes.length > maxAllowed) {
+                mostrarMensagem('O limite máximo é de 15 imagens no total (incluindo as já salvas).', 'erro');
+                return;
+            }
+
+            for(let i=0; i<files.length; i++) {
+                arquivosSelecionados.push(files[i]);
+            }
+            
+            renderizarPreviewImagens();
+        }
+
+        function renderizarPreviewImagens() {
+            const container = document.getElementById('imagePreviewContainer');
+            const servicoId = document.getElementById('selectServico').value;
+            
+            // Re-renderizar imagens salvas
+            renderizarImagensExistentesServico(servicoId, imagensIdsExistentes);
+            
+            // Anexar visualizações dos novos arquivos
+            arquivosSelecionados.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    div.innerHTML = `
+                        <div class="image-preview-img-container">
+                            <img src="${e.target.result}" alt="Preview" style="opacity: 0.7; border: 2px dashed var(--primary);">
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function salvarImagens() {
+            const servicoId = document.getElementById('selectServico').value;
+            if(!servicoId) {
+                mostrarMensagem('Selecione um serviço primeiro.', 'erro');
+                return;
+            }
+            
+            if(arquivosSelecionados.length === 0) {
+                mostrarMensagem('Nenhuma nova imagem selecionada.', 'erro');
+                return;
+            }
+            
+            const formData = new FormData();
+            arquivosSelecionados.forEach((file, index) => {
+                formData.append(`imagem${index+1}`, file);
+            });
+            
+            mostrarMensagem('Fazendo upload e salvando as imagens...', 'sucesso');
+            
+            fetch(`/admin/api/servicos/${servicoId}/imagens`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.sucesso) {
+                    mostrarMensagem('Imagens salvas com sucesso no banco de dados!', 'sucesso');
+                    arquivosSelecionados = [];
+                    document.getElementById('imagePreviewContainer').innerHTML = '';
+                    carregarImagensExistentes();
+                } else {
+                    mostrarMensagem('Erro ao salvar imagens.', 'erro');
+                }
+            });
+        }
+
+        // Init
+        carregarServicos();
+    </script>
+</body>
+</html>

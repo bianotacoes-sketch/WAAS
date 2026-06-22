@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Serviços | {{ cliente.nome_fantasia }}</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: {{ cores.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cores.cor_secundaria | default('#764ba2') }};
+            --border: #334155;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            max-height: 40px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text i {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .welcome-msg {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .welcome-msg strong {
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .logout-btn {
+            background-color: #f43f5e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #e11d48;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: var(--warning-hover);
+        }
+
+        .servicos-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .servico-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .servico-item:hover {
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .servico-nome {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .servico-detalhes {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 16px;
+        }
+
+        .servico-detalhes i {
+            color: var(--primary);
+        }
+
+        .servico-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-header i {
+            color: var(--primary);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 28px;
+        }
+
+        .toast-message {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 1001;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .servico-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .servico-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            header {
+                padding: 16px 24px;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .user-nav {
+                flex-direction: column;
+                width: 100%;
+            }
+            .nav-links {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            {% if cliente.logo_url %}
+                <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
+            {% else %}
+                <div class="logo-text">
+                    <i class="fa-solid fa-scissors"></i>
+                    <span>{{ cliente.nome_fantasia }}</span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="user-nav">
+            <span class="welcome-msg">Olá, <strong>{{ admin_nome }}</strong></span>
+            
+            <div class="nav-links">
+                <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
+                <a href="/admin/agenda" class="nav-link"><i class="fa-regular fa-calendar-days"></i> Agenda</a>
+                <a href="/admin/promocoes" class="nav-link"><i class="fa-solid fa-tags"></i> Promoções</a>
+            </div>
+            
+            <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="panel-title">
+            <i class="fa-solid fa-scissors"></i> Gerenciar Serviços do Estabelecimento
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fa-solid fa-plus"></i> Adicionar Novo Serviço</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nome do Serviço</label>
+                    <input type="text" id="servicoNome" placeholder="Ex: Corte de Cabelo Masculino">
+                </div>
+                <div class="form-group">
+                    <label>Duração Estimada (minutos)</label>
+                    <input type="number" id="servicoDuracao" placeholder="Ex: 30" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Preço Sugerido (R$)</label>
+                    <input type="number" id="servicoValor" placeholder="Ex: 50.00" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="form-row" style="margin-bottom: 20px;">
+                <div class="form-group">
+                    <label>Público-alvo / Gênero</label>
+                    <select id="servicoGenero" style="width: 100%; padding: 10px 14px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; font-family: inherit;">
+                        <option value="U">Unissex / Tanto faz</option>
+                        <option value="F">Feminino (Mulher)</option>
+                        <option value="M">Masculino (Homem)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Categoria de Ícone</label>
+                    <select id="servicoIcone" style="width: 100%; padding: 10px 14px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; font-family: inherit;">
+                        <option value="Rosto">Rosto / Beleza</option>
+                        <option value="Mao">Mão / Unha</option>
+                        <option value="Corpo">Corpo</option>
+                        <option value="Cabelo">Cabelo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descrição do Serviço</label>
+                    <input type="text" id="servicoDescricao" placeholder="Ex: Acabamento e hidratação" style="width: 100%; padding: 10px 14px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; font-family: inherit;">
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="adicionarServico()"><i class="fa-solid fa-floppy-disk"></i> Salvar Serviço</button>
+        </div>
+        
+        <div class="card">
+            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fa-solid fa-list-check"></i> Catálogo de Serviços</span>
+                <button class="btn btn-primary btn-sm" onclick="carregarServicos()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+            </div>
+            <div id="servicosList" class="servicos-list">
+                <div class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Carregando catálogo...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Edição -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><i class="fa-solid fa-pencil"></i> Editar Detalhes do Serviço</div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Nome do Serviço</label>
+                <input type="text" id="editNome">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Duração (minutos)</label>
+                <input type="number" id="editDuracao" min="1">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Valor (R$)</label>
+                <input type="number" id="editValor" step="0.01" min="0">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Público-alvo / Gênero</label>
+                <select id="editGenero" style="width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-family: inherit; font-size: 14px;">
+                    <option value="U">Unissex / Tanto faz</option>
+                    <option value="F">Feminino (Mulher)</option>
+                    <option value="M">Masculino (Homem)</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Categoria de Ícone</label>
+                <select id="editIcone" style="width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-family: inherit; font-size: 14px;">
+                    <option value="Rosto">Rosto / Beleza</option>
+                    <option value="Mao">Mão / Unha</option>
+                    <option value="Corpo">Corpo</option>
+                    <option value="Cabelo">Cabelo</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label>Descrição do Serviço</label>
+                <input type="text" id="editDescricao" placeholder="Ex: Hidratação profunda" style="width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-family: inherit; font-size: 14px;">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="salvarEdicao()"><i class="fa-solid fa-check"></i> Salvar Alterações</button>
+                <button class="btn btn-danger" onclick="fecharModal()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast-message" style="display: none;"></div>
+    
+    <script>
+        let servicosAtuais = [];
+        let editandoId = null;
+        
+        function mostrarMensagem(msg, tipo) {
+            const toast = document.getElementById('toast');
+            toast.style.background = tipo === 'sucesso' ? 'var(--success)' : 'var(--danger)';
+            toast.innerHTML = (tipo === 'sucesso' ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-xmark"></i> ') + msg;
+            toast.style.display = 'flex';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+        
+        function carregarServicos() {
+            fetch('/admin/api/servicos')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        servicosAtuais = data.servicos;
+                        renderizarLista();
+                    } else {
+                        mostrarMensagem('Erro ao carregar serviços.', 'erro');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    mostrarMensagem('Erro de conexão ao carregar serviços.', 'erro');
+                });
+        }
+        
+        function renderizarLista() {
+            const container = document.getElementById('servicosList');
+            
+            if (!servicosAtuais || servicosAtuais.length === 0) {
+                container.innerHTML = '<div class="empty-message">Nenhum serviço cadastrado ainda. Adicione o seu primeiro!</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            servicosAtuais.forEach((servico, index) => {
+                const div = document.createElement('div');
+                div.className = 'servico-item';
+                
+                let servicoObj = typeof servico === 'string' ? JSON.parse(servico) : servico;
+                
+                const generoMap = { 'U': 'Unissex', 'F': 'Feminino', 'M': 'Masculino' };
+                const iconeMap = { 'Rosto': 'Rosto / Beleza', 'Mao': 'Mão / Unha', 'Corpo': 'Corpo', 'Cabelo': 'Cabelo' };
+                const generoText = generoMap[servicoObj.genero] || 'Unissex';
+                const iconeText = iconeMap[servicoObj.icone] || 'Cabelo';
+                
+                div.innerHTML = `
+                    <div class="servico-info">
+                        <div class="servico-nome">${servicoObj.nome || 'Sem nome'}</div>
+                        <div class="servico-detalhes">
+                            <span><i class="fa-regular fa-clock"></i> ${servicoObj.duracao || 0} min</span>
+                            <span>R$ ${(servicoObj.valor || 0).toFixed(2)}</span>
+                            <span style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-size: 11px;">Público: ${generoText}</span>
+                            <span style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-size: 11px;">Tipo: ${iconeText}</span>
+                        </div>
+                    </div>
+                    <div class="servico-actions">
+                        <button class="btn btn-warning btn-sm" onclick="abrirEdicao(${index})"><i class="fa-solid fa-pencil"></i> Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirServico(${index})"><i class="fa-solid fa-trash-can"></i> Excluir</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function adicionarServico() {
+            const nome = document.getElementById('servicoNome').value.trim();
+            const duracao = parseInt(document.getElementById('servicoDuracao').value);
+            const valor = parseFloat(document.getElementById('servicoValor').value);
+            
+            if (!nome) {
+                mostrarMensagem('Digite o nome do serviço', 'erro');
+                return;
+            }
+            
+            if (isNaN(duracao) || duracao <= 0) {
+                mostrarMensagem('Digite uma duração válida', 'erro');
+                return;
+            }
+            
+            if (isNaN(valor) || valor < 0) {
+                mostrarMensagem('Digite um valor válido', 'erro');
+                return;
+            }
+            
+            const genero = document.getElementById('servicoGenero').value;
+            const icone = document.getElementById('servicoIcone').value;
+            const descricao = document.getElementById('servicoDescricao').value.trim();
+            
+            const novoServico = {
+                id: Date.now(),
+                nome: nome,
+                duracao: duracao,
+                valor: valor,
+                genero: genero,
+                icone: icone,
+                descricao: descricao
+            };
+            
+            fetch('/admin/api/servicos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(novoServico)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Serviço adicionado com sucesso!', 'sucesso');
+                    document.getElementById('servicoNome').value = '';
+                    document.getElementById('servicoDuracao').value = '';
+                    document.getElementById('servicoValor').value = '';
+                    document.getElementById('servicoGenero').value = 'U';
+                    document.getElementById('servicoIcone').value = 'Rosto';
+                    document.getElementById('servicoDescricao').value = '';
+                    carregarServicos();
+                } else {
+                    mostrarMensagem('Erro ao salvar serviço.', 'erro');
+                }
+            })
+            .catch(error => {
+                mostrarMensagem('Erro de conexão ao salvar serviço.', 'erro');
+            });
+        }
+        
+        function abrirEdicao(index) {
+            const servico = servicosAtuais[index];
+            let servicoObj = typeof servico === 'string' ? JSON.parse(servico) : servico;
+            
+            editandoId = index;
+            document.getElementById('editNome').value = servicoObj.nome || '';
+            document.getElementById('editDuracao').value = servicoObj.duracao || 0;
+            document.getElementById('editValor').value = servicoObj.valor || 0;
+            document.getElementById('editGenero').value = servicoObj.genero || 'U';
+            document.getElementById('editIcone').value = servicoObj.icone || 'Rosto';
+            document.getElementById('editDescricao').value = servicoObj.descricao || '';
+            
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        
+        function salvarEdicao() {
+            const nome = document.getElementById('editNome').value.trim();
+            const duracao = parseInt(document.getElementById('editDuracao').value);
+            const valor = parseFloat(document.getElementById('editValor').value);
+            
+            if (!nome) {
+                mostrarMensagem('O nome do serviço é obrigatório', 'erro');
+                return;
+            }
+            
+            const servicoAtual = servicosAtuais[editandoId];
+            let servicoObj = typeof servicoAtual === 'string' ? JSON.parse(servicoAtual) : servicoAtual;
+            
+            servicoObj.nome = nome;
+            servicoObj.duracao = duracao;
+            servicoObj.valor = valor;
+            servicoObj.genero = document.getElementById('editGenero').value;
+            servicoObj.icone = document.getElementById('editIcone').value;
+            servicoObj.descricao = document.getElementById('editDescricao').value.trim();
+            
+            fetch('/admin/api/servicos', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index: editandoId, servico: servicoObj })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Serviço atualizado com sucesso!', 'sucesso');
+                    fecharModal();
+                    carregarServicos();
+                } else {
+                    mostrarMensagem('Erro ao atualizar serviço.', 'erro');
+                }
+            });
+        }
+        
+        function excluirServico(index) {
+            if (confirm('Tem certeza de que deseja remover este serviço do catálogo?')) {
+                fetch('/admin/api/servicos', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index: index })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        mostrarMensagem('Serviço excluído com sucesso!', 'sucesso');
+                        carregarServicos();
+                    } else {
+                        mostrarMensagem('Erro ao excluir serviço.', 'erro');
+                    }
+                });
+            }
+        }
+        
+        function fecharModal() {
+            document.getElementById('editModal').style.display = 'none';
+            editandoId = null;
+        }
+        
+        carregarServicos();
+    </script>
+</body>
+</html>

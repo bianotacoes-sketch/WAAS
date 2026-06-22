@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo | {{ cliente.nome_fantasia }}</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: {{ cores.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cores.cor_secundaria | default('#764ba2') }};
+            --border: #334155;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            max-height: 40px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text i {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .logo-emoji {
+            font-size: 22px;
+        }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .welcome-msg {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .welcome-msg strong {
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-whatsapp-nav {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-whatsapp-nav:hover {
+            background-color: #128C7E;
+        }
+
+        .logout-btn {
+            background-color: #f43f5e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #e11d48;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .dashboard-header {
+            margin-bottom: 32px;
+        }
+
+        .dashboard-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dashboard-header h1 i {
+            color: var(--primary);
+        }
+
+        .dashboard-header p {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.8;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-icon {
+            font-size: 26px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover .card-icon {
+            transform: scale(1.05);
+            border-color: var(--primary);
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .feature-card h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 24px;
+            flex-grow: 1;
+        }
+
+        .card-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover .card-btn {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        @media (max-width: 1024px) {
+            header {
+                padding: 16px 24px;
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            .user-nav {
+                flex-direction: column;
+                width: 100%;
+            }
+            .nav-links {
+                justify-content: center;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            {% if cliente.logo_url %}
+                <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
+            {% else %}
+                <div class="logo-text">
+                    {% if nome_dashboard.get('icone') == '💇' or not nome_dashboard.get('icone') %}
+                        <i class="fa-solid fa-scissors"></i>
+                    {% else %}
+                        <span class="logo-emoji">{{ nome_dashboard.get('icone') }}</span>
+                    {% endif %}
+                    <span>{{ nome_dashboard.get('titulo', cliente.nome_fantasia) }}</span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="user-nav">
+            <span class="welcome-msg">Olá, <strong>{{ admin_nome }}</strong></span>
+            
+            <div class="nav-links">
+                {% if config_agenda.get('ativo', false) %}
+                <a href="/admin/agenda" class="nav-link">
+                    <i class="fa-regular fa-calendar-days"></i> {{ config_agenda.get('titulo', 'Agenda') }}
+                </a>
+                {% endif %}
+                
+                {% if gerenciar_servico.get('ativo', false) %}
+                <a href="/admin/servicos" class="nav-link">
+                    <i class="fa-solid fa-scissors"></i> {{ gerenciar_servico.get('titulo', 'Serviços') }}
+                </a>
+                {% endif %}
+                
+                {% if promocoes.get('ativo', false) %}
+                <a href="/admin/promocoes" class="nav-link">
+                    <i class="fa-solid fa-tags"></i> {{ promocoes.get('titulo', 'Promoções') }}
+                </a>
+                {% endif %}
+                {% if session.get('tipo') == 'proprietario' or personalizar_aparencia.get('ativo', false) %}
+                <a href="/admin/layout" class="nav-link">
+                    <i class="fa-solid {{ personalizar_aparencia.get('icone', 'fa-palette') }}"></i> {{ personalizar_aparencia.get('titulo', 'Aparência') }}
+                </a>
+                {% endif %}
+                
+                {% if gerenciar_ofertas.get('ativo', false) %}
+                <a href="/admin/imobiliaria/ofertas" class="nav-link">
+                    <i class="fa-solid {{ gerenciar_ofertas.get('icone', 'fa-house') }}"></i> {{ gerenciar_ofertas.get('titulo', 'Ofertas') }}
+                </a>
+                {% endif %}
+                
+                {% if imagens_servicos.get('ativo', false) %}
+                <a href="/admin/servicos/imagens" class="nav-link">
+                    <i class="fa-solid {{ imagens_servicos.get('icone', 'fa-images') }}"></i> {{ imagens_servicos.get('titulo', 'Imagens') }}
+                </a>
+                {% endif %}
+            </div>
+            
+            {% if cliente.whatsapp %}
+            <a href="https://wa.me/{{ cliente.whatsapp }}" target="_blank" class="btn-whatsapp-nav">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            </a>
+            {% endif %}
+            
+            <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1><i class="fa-solid fa-chart-line"></i> Painel Administrativo</h1>
+            <p>Monitore e configure os recursos do seu portal de atendimento</p>
+        </div>
+
+        <div class="cards-grid">
+            {% if config_agenda.get('ativo', false) %}
+            <div class="feature-card" onclick="window.location.href='/admin/agenda'">
+                <div class="card-icon">
+                    {% if config_agenda.get('icone') == '📅' or not config_agenda.get('icone') %}
+                        <i class="fa-regular fa-calendar-days"></i>
+                    {% else %}
+                        {{ config_agenda.get('icone') }}
+                    {% endif %}
+                </div>
+                <h3>{{ config_agenda.get('titulo', 'Configurar Agenda') }}</h3>
+                <p>{{ config_agenda.get('descricao', 'Defina horários, intervalos e dias de funcionamento') }}</p>
+                <div class="card-btn">Acessar Agenda</div>
+            </div>
+            {% endif %}
+            
+            {% if gerenciar_servico.get('ativo', false) %}
+            <div class="feature-card" onclick="window.location.href='/admin/servicos'">
+                <div class="card-icon">
+                    {% if gerenciar_servico.get('icone') == '💇' or not gerenciar_servico.get('icone') %}
+                        <i class="fa-solid fa-scissors"></i>
+                    {% else %}
+                        {{ gerenciar_servico.get('icone') }}
+                    {% endif %}
+                </div>
+                <h3>{{ gerenciar_servico.get('titulo', 'Gerenciar Serviços') }}</h3>
+                <p>{{ gerenciar_servico.get('descricao', 'Cadastre e edite os serviços oferecidos aos clientes') }}</p>
+                <div class="card-btn">Acessar Serviços</div>
+            </div>
+            {% endif %}
+            
+            {% if promocoes.get('ativo', false) %}
+            <div class="feature-card" onclick="window.location.href='/admin/promocoes'">
+                <div class="card-icon">
+                    {% if promocoes.get('icone') == '🏷️' or not promocoes.get('icone') %}
+                        <i class="fa-solid fa-tags"></i>
+                    {% else %}
+                        {{ promocoes.get('icone') }}
+                    {% endif %}
+                </div>
+                <h3>{{ promocoes.get('titulo', 'Promoções') }}</h3>
+                <p>{{ promocoes.get('descricao', 'Crie ofertas especiais e descontos para datas comemorativas') }}</p>
+                <div class="card-btn">Acessar Promoções</div>
+            </div>
+            {% endif %}
+            {% if session.get('tipo') == 'proprietario' or personalizar_aparencia.get('ativo', false) %}
+            <div class="feature-card" onclick="window.location.href='/admin/layout'">
+                <div class="card-icon">
+                    <i class="fa-solid {{ personalizar_aparencia.get('icone', 'fa-palette') }}"></i>
+                </div>
+                <h3>{{ personalizar_aparencia.get('titulo', 'Personalizar Aparência') }}</h3>
+                <p>{{ personalizar_aparencia.get('descricao', 'Altere o tema, cores, tipografia, cantos, sombras e layout da página principal do cliente') }}</p>
+                <div class="card-btn">Acessar Aparência</div>
+            </div>
+            {% endif %}
+            
+            {% if gerenciar_clientes.get('ativo', false) %}
+            <div class="feature-card">
+                <div class="card-icon">
+                    {% if gerenciar_clientes.get('icone') == '👥' or not gerenciar_clientes.get('icone') %}
+                        <i class="fa-solid fa-users"></i>
+                    {% else %}
+                        {{ gerenciar_clientes.get('icone') }}
+                    {% endif %}
+                </div>
+                <h3>{{ gerenciar_clientes.get('titulo', 'Gerenciar Clientes') }}</h3>
+                <p>{{ gerenciar_clientes.get('descricao', 'Visualize e gerencie os clientes cadastrados') }}</p>
+                <div class="card-btn">{{ gerenciar_clientes.get('botao', 'Em breve') }}</div>
+            </div>
+            {% endif %}
+            
+            {% if gerenciar_ofertas.get('ativo', false) %}
+            <div class="feature-card" onclick="window.location.href='/admin/imobiliaria/ofertas'">
+                <div class="card-icon">
+                    <i class="fa-solid {{ gerenciar_ofertas.get('icone', 'fa-house') }}"></i>
+                </div>
+                <h3>{{ gerenciar_ofertas.get('titulo', 'Inserção de Ofertas') }}</h3>
+                <p>{{ gerenciar_ofertas.get('descricao', 'Gerencie imóveis, preços, localização e galeria de fotos para as ofertas da sua imobiliária.') }}</p>
+                <div class="card-btn">Gerenciar Ofertas</div>
+            </div>
+            {% endif %}
+            
+            {% if imagens_servicos.get('ativo', false) %}
+            <div class="feature-card" onclick="window.location.href='/admin/servicos/imagens'">
+                <div class="card-icon">
+                    <i class="fa-solid {{ imagens_servicos.get('icone', 'fa-images') }}"></i>
+                </div>
+                <h3>{{ imagens_servicos.get('titulo', 'Imagens dos Serviços') }}</h3>
+                <p>{{ imagens_servicos.get('descricao', 'Adicione imagens e crie galerias visuais para apresentar o trabalho de cada um dos seus serviços.') }}</p>
+                <div class="card-btn">Gerenciar Imagens</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

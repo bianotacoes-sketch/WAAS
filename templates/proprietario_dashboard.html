@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Proprietário | WAAS</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --secondary: #4f46e5;
+            --border: #334155;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text i {
+            color: var(--primary);
+            font-size: 20px;
+        }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .welcome-msg {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .welcome-msg strong {
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .logout-btn {
+            background-color: #f43f5e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #e11d48;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="password"],
+        .form-group input[type="color"],
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .form-group-checkbox {
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            padding-top: 10px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: var(--warning-hover);
+        }
+
+        .btn-pequeno {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        .lista-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .item-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .item-card:hover {
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .item-info {
+            flex-grow: 1;
+        }
+
+        .item-info i {
+            color: var(--primary);
+            margin-right: 6px;
+        }
+
+        .item-nome {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+        }
+
+        .item-detalhes {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-header i {
+            color: var(--primary);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 28px;
+        }
+
+        .toast-message {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 1001;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .item-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .item-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            header {
+                padding: 16px 24px;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .user-nav {
+                flex-direction: column;
+                width: 100%;
+            }
+            .nav-links {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo-text">
+                <i class="fa-solid fa-crown"></i>
+                <span>Portal do Proprietário WAAS</span>
+            </div>
+        </div>
+        
+        <div class="user-nav">
+            <span class="welcome-msg">Olá, <strong>{{ admin_nome }}</strong></span>
+            
+            <div class="nav-links">
+                <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Ir para Admin</a>
+            </div>
+            
+            <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        </div>
+    </header>
+
+    <div class="container" style="margin-bottom: 60px;">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="mudarTab('usuarios')"><i class="fa-solid fa-users"></i> Usuários</button>
+            <button class="tab-btn" onclick="mudarTab('empresas')"><i class="fa-solid fa-building"></i> Empresas</button>
+            <button class="tab-btn" onclick="mudarTab('sites')"><i class="fa-solid fa-globe"></i> Sites</button>
+            <button class="tab-btn" onclick="mudarTab('clientes')"><i class="fa-solid fa-palette"></i> Clientes</button>
+            <button class="tab-btn" onclick="mudarTab('permissoes')"><i class="fa-solid fa-gears"></i> Permissões</button>
+        </div>
+
+        <!-- TAB USUÁRIOS -->
+        <div id="tab-usuarios" class="tab-content active">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-user-plus"></i> Adicionar Novo Usuário</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" id="userNome" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" id="userEmail" placeholder="email@exemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Senha de Acesso</label>
+                        <input type="password" id="userSenha" placeholder="********">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Perfil</label>
+                        <select id="userTipo">
+                            <option value="admin">Administrador do Site</option>
+                            <option value="user">Usuário Comum</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Empresa</label>
+                        <select id="userEmpresa">
+                            <option value="">Selecione uma empresa</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Site Vinculado</label>
+                        <select id="userSite">
+                            <option value="">Selecione um site</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ativo (Acesso Liberado)</label>
+                        <select id="userAtivo">
+                            <option value="S">Sim</option>
+                            <option value="N">Não</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="adicionarUsuario()"><i class="fa-solid fa-user-plus"></i> Adicionar Usuário</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-list"></i> Usuários Registrados</span>
+                    <button class="btn btn-primary btn-sm" onclick="carregarUsuarios()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+                </div>
+                <div id="usuariosList" class="lista-items">
+                    <div class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Carregando usuários...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB EMPRESAS -->
+        <div id="tab-empresas" class="tab-content">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-building"></i> Cadastrar Nova Empresa</div>
+                <div class="form-group">
+                    <label>Nome / Razão Social</label>
+                    <input type="text" id="empresaNome" placeholder="Ex: Salão Estilo & Cia Ltda">
+                </div>
+                <div class="form-group" style="margin-top: 15px; margin-bottom: 15px;">
+                    <label>Endereço</label>
+                    <textarea id="empresaEndereco" placeholder="Ex: Rua Exemplo, 123&#10;Centro, Cidade" style="width: 100%; padding: 10px 14px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; font-family: inherit; resize: vertical; min-height: 80px;"></textarea>
+                </div>
+                <button class="btn btn-success" onclick="adicionarEmpresa()"><i class="fa-solid fa-plus"></i> Cadastrar Empresa</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-list"></i> Empresas Cadastradas</span>
+                    <button class="btn btn-primary btn-sm" onclick="carregarEmpresas()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+                </div>
+                <div id="empresasList" class="lista-items">
+                    <div class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Carregando empresas...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB SITES -->
+        <div id="tab-sites" class="tab-content">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-globe"></i> Cadastrar Novo Site / Serviço</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Identificador do Site</label>
+                        <input type="text" id="siteNome" placeholder="Ex: Site Principal Barbearia">
+                    </div>
+                    <div class="form-group">
+                        <label>Vincular à Empresa</label>
+                        <select id="siteEmpresa">
+                            <option value="">Selecione uma empresa</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="adicionarSite()"><i class="fa-solid fa-plus"></i> Criar Site</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-list"></i> Sites / Serviços do WAAS</span>
+                    <button class="btn btn-primary btn-sm" onclick="carregarSites()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+                </div>
+                <div id="sitesList" class="lista-items">
+                    <div class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Carregando sites...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB CLIENTES -->
+        <div id="tab-clientes" class="tab-content">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-palette"></i> Personalização Visual dos Inquilinos (Tenants)</div>
+                <div class="form-group">
+                    <label>Selecione o Cliente / Site</label>
+                    <select id="selectCliente" onchange="carregarDadosCliente()">
+                        <option value="">Selecione um cliente para personalizar...</option>
+                    </select>
+                </div>
+                
+                <div id="personalizacaoForm" style="display: none; margin-top: 24px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome Fantasia</label>
+                            <input type="text" id="editNomeFantasia">
+                        </div>
+                        <div class="form-group">
+                            <label>URL Amigável (Slug)</label>
+                            <input type="text" id="editUrlAmigavel" placeholder="ex: meu-salao">
+                        </div>
+                        <div class="form-group">
+                            <label>WhatsApp de Contato</label>
+                            <input type="text" id="editWhatsapp" placeholder="ex: 5531986409761">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cor Primária da Marca</label>
+                            <input type="color" id="editCorPrimaria">
+                        </div>
+                        <div class="form-group">
+                            <label>Cor Secundária da Marca</label>
+                            <input type="color" id="editCorSecundaria">
+                        </div>
+                        <div class="form-group">
+                            <label>Cor de Destaque / Sucesso</label>
+                            <input type="color" id="editCorTerciaria">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>URL do Logotipo da Marca</label>
+                        <input type="text" id="editLogoUrl" placeholder="https://exemplo.com/imagens/logo.png">
+                    </div>
+                    <button class="btn btn-success" onclick="salvarPersonalizacao()"><i class="fa-solid fa-floppy-disk"></i> Salvar Customização Visual</button>
+                    
+                    <!-- Banner Editor de Layout -->
+                    <div style="margin-top: 24px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div>
+                            <h4 style="margin-bottom: 4px; color: var(--text-main); font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-palette" style="color: var(--primary);"></i> Editor de Layout Completo</h4>
+                            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Configure presets, fontes, bordas, sombras e visualize em tempo real no mockup.</p>
+                        </div>
+                        <a id="btnAbrirLayoutEditor" href="#" target="_blank" class="btn btn-primary" style="white-space: nowrap;"><i class="fa-solid fa-up-right-from-square"></i> Abrir Editor de Layout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB PERMISSÕES -->
+        <div id="tab-permissoes" class="tab-content">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-gears"></i> Gestão de Acessos e Módulos por Usuário</div>
+                <div class="form-group">
+                    <label>Selecione o Usuário Administrador</label>
+                    <select id="selectUsuarioPermissao" onchange="carregarPermissoesUsuario()">
+                        <option value="">Escolha um usuário...</option>
+                    </select>
+                </div>
+                
+                <div id="permissoesForm" style="display: none; margin-top: 24px;">
+                    <!-- Card Personalização de Conteúdo do Site -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-solid fa-pen-to-square"></i> Personalização de Conteúdo do Site</h4>
+                        <div class="form-row" style="margin-top: 12px; gap: 20px;">
+                            <div class="form-group" style="flex: 1; min-width: 250px;">
+                                <label>Título Customizado do Site (Hero)</label>
+                                <input type="text" id="permAparenciaTituloSite" placeholder="Ex: Encontre o Imóvel dos Seus Sonhos">
+                            </div>
+                            <div class="form-group" style="flex: 2; min-width: 250px;">
+                                <label>Corpo/Descrição Customizada do Site</label>
+                                <input type="text" id="permAparenciaCorpoSite" placeholder="Ex: Selecione as melhores ofertas...">
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-top: 12px; gap: 20px;">
+                            <div class="form-group" style="flex: 1; min-width: 200px;">
+                                <label>Sobre o Espaço - Título</label>
+                                <input type="text" id="permAparenciaSobreTitulo" placeholder="Ex: Sobre o Espaço">
+                            </div>
+                            <div class="form-group" style="flex: 2; min-width: 250px;">
+                                <label>Sobre o Espaço - Texto 1</label>
+                                <input type="text" id="permAparenciaSobreTexto1" placeholder="Ex: Comprometidos com a excelência...">
+                            </div>
+                            <div class="form-group" style="flex: 2; min-width: 250px;">
+                                <label>Sobre o Espaço - Texto 2</label>
+                                <input type="text" id="permAparenciaSobreTexto2" placeholder="Ex: Unimos técnica refinada...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Dashboard -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-solid fa-chart-line"></i> Módulo Dashboard Principal</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo no Menu</label>
+                                <input type="text" id="permDashboardTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permDashboardIcone" placeholder="fa-chart-line">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permDashboardAtivo">
+                                <label for="permDashboardAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Agenda -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-regular fa-calendar-days"></i> Módulo Configuração de Agenda</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permAgendaTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permAgendaIcone" placeholder="fa-calendar-days">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permAgendaDescricao">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permAgendaAtivo">
+                                <label for="permAgendaAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Serviços -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-solid fa-scissors"></i> Módulo Catálogo de Serviços</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permServicoTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permServicoIcone" placeholder="fa-scissors">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permServicoDescricao">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permServicoAtivo">
+                                <label for="permServicoAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Promoções -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-solid fa-tags"></i> Módulo Gestão de Promoções</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permPromocaoTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permPromocaoIcone" placeholder="fa-tags">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permPromocaoDescricao">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permPromocaoAtivo">
+                                <label for="permPromocaoAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Clientes -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-solid fa-users"></i> Módulo Clientes Cadastrados</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permClienteTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permClienteIcone" placeholder="fa-users">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permClienteDescricao">
+                            </div>
+                            <div class="form-group">
+                                <label>Texto do Botão</label>
+                                <input type="text" id="permClienteBotao" placeholder="Em breve">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permClienteAtivo">
+                                <label for="permClienteAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Aparência -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-solid fa-palette"></i> Módulo Personalizar Aparência</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permAparenciaTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permAparenciaIcone" placeholder="fa-palette">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permAparenciaDescricao">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permAparenciaAtivo">
+                                <label for="permAparenciaAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Ofertas (Apenas Imobiliária) -->
+                    <div class="card" id="cardPermOfertas" style="border-left: 4px solid var(--primary); display: none;">
+                        <h4><i class="fa-solid fa-house"></i> Módulo Inserção de Ofertas</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permOfertasTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permOfertasIcone" placeholder="fa-house">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permOfertasDescricao">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permOfertasAtivo">
+                                <label for="permOfertasAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Imagens de Serviços (Outros Sites) -->
+                    <div class="card" id="cardPermImagensServicos" style="border-left: 4px solid var(--primary); display: none;">
+                        <h4><i class="fa-solid fa-images"></i> Módulo Imagens dos Serviços</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permImagensServicosTitulo">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permImagensServicosIcone" placeholder="fa-images">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permImagensServicosDescricao">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permImagensServicosAtivo">
+                                <label for="permImagensServicosAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="salvarPermissoes()" style="width: 100%; padding: 14px;"><i class="fa-solid fa-floppy-disk"></i> Salvar Permissões de Acesso</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle"><i class="fa-solid fa-pencil"></i> Editar Registro</div>
+            <div id="modalBody"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="salvarEdicao()"><i class="fa-solid fa-check"></i> Salvar</button>
+                <button class="btn btn-danger" onclick="fecharModal()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast-message" style="display: none;"></div>
+
+    <script>
+        let empresas = [];
+        let sites = [];
+        let usuarios = [];
+        let clientes = [];
+        let editandoTipo = null;
+        let editandoId = null;
+        let usuarioPermissaoAtual = null;
+        
+        function mostrarMensagem(msg, tipo) {
+            const toast = document.getElementById('toast');
+            toast.style.background = tipo === 'sucesso' ? 'var(--success)' : 'var(--danger)';
+            toast.innerHTML = (tipo === 'sucesso' ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-xmark"></i> ') + msg;
+            toast.style.display = 'flex';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+        
+        function mudarTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'usuarios') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-usuarios').classList.add('active');
+                carregarUsuarios();
+                carregarEmpresasParaSelect();
+                carregarSitesParaSelect();
+            } else if (tab === 'empresas') {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-empresas').classList.add('active');
+                carregarEmpresas();
+            } else if (tab === 'sites') {
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('tab-sites').classList.add('active');
+                carregarSites();
+                carregarEmpresasParaSelectSite();
+            } else if (tab === 'clientes') {
+                document.querySelectorAll('.tab-btn')[3].classList.add('active');
+                document.getElementById('tab-clientes').classList.add('active');
+                carregarClientes();
+            } else if (tab === 'permissoes') {
+                document.querySelectorAll('.tab-btn')[4].classList.add('active');
+                document.getElementById('tab-permissoes').classList.add('active');
+                carregarUsuariosParaSelectPermissao();
+            }
+        }
+        
+        // ========== EMPRESAS ==========
+        function carregarEmpresas() {
+            fetch('/admin/api/proprietario/empresas')
+                .then(response => response.json())
+                .then(data => {
+                    empresas = data.empresas || [];
+                    renderizarEmpresas();
+                })
+                .catch(() => mostrarMensagem('Erro ao carregar empresas', 'erro'));
+        }
+        
+        function renderizarEmpresas() {
+            const container = document.getElementById('empresasList');
+            if (!empresas.length) {
+                container.innerHTML = '<div class="empty-message">Nenhuma empresa cadastrada.</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            empresas.forEach(empresa => {
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-nome"><i class="fa-solid fa-building"></i> ${empresa.nome}</div>
+                        <div class="item-detalhes">Código Identificador: ${empresa.id}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-warning btn-pequeno" onclick="abrirEdicaoEmpresa(${empresa.id})"><i class="fa-solid fa-pencil"></i> Editar</button>
+                        <button class="btn btn-danger btn-pequeno" onclick="excluirEmpresa(${empresa.id})"><i class="fa-solid fa-trash-can"></i> Excluir</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function adicionarEmpresa() {
+            const nome = document.getElementById('empresaNome').value.trim();
+            const endereco = document.getElementById('empresaEndereco').value.trim();
+            if (!nome) {
+                mostrarMensagem('Digite o nome da empresa', 'erro');
+                return;
+            }
+            
+            fetch('/admin/api/proprietario/empresas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nome, endereco: endereco })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Empresa criada com sucesso!', 'sucesso');
+                    document.getElementById('empresaNome').value = '';
+                    document.getElementById('empresaEndereco').value = '';
+                    carregarEmpresas();
+                    carregarEmpresasParaSelect();
+                    carregarEmpresasParaSelectSite();
+                } else {
+                    mostrarMensagem(data.erro || 'Erro ao criar empresa', 'erro');
+                }
+            });
+        }
+        
+        function abrirEdicaoEmpresa(id) {
+            const empresa = empresas.find(e => e.id === id);
+            if (!empresa) return;
+            editandoTipo = 'empresa';
+            editandoId = id;
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pencil"></i> Editar Empresa';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-group">
+                    <label>Nome / Razão Social</label>
+                    <input type="text" id="editValor" value="${empresa.nome}">
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Endereço</label>
+                    <textarea id="editEndereco" style="width: 100%; padding: 10px 14px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; font-family: inherit; resize: vertical; min-height: 80px;">${empresa.endereco || ''}</textarea>
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        
+        function excluirEmpresa(id) {
+            if (confirm('Tem certeza de que deseja remover esta empresa? Todos os vínculos precisam estar vazios.')) {
+                fetch(`/admin/api/proprietario/empresas?id=${id}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.sucesso) {
+                            mostrarMensagem('Empresa excluída com sucesso!', 'sucesso');
+                            carregarEmpresas();
+                            carregarEmpresasParaSelect();
+                            carregarEmpresasParaSelectSite();
+                        } else {
+                            mostrarMensagem(data.erro || 'Erro ao excluir.', 'erro');
+                        }
+                    });
+            }
+        }
+        
+        function carregarEmpresasParaSelect() {
+            fetch('/admin/api/proprietario/empresas')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('userEmpresa');
+                    select.innerHTML = '<option value="">Selecione uma empresa</option>';
+                    (data.empresas || []).forEach(emp => {
+                        select.innerHTML += `<option value="${emp.id}">${emp.nome}</option>`;
+                    });
+                });
+        }
+        
+        function carregarEmpresasParaSelectSite() {
+            fetch('/admin/api/proprietario/empresas')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('siteEmpresa');
+                    select.innerHTML = '<option value="">Selecione uma empresa</option>';
+                    (data.empresas || []).forEach(emp => {
+                        select.innerHTML += `<option value="${emp.id}">${emp.nome}</option>`;
+                    });
+                });
+        }
+        
+        // ========== SITES ==========
+        function carregarSites() {
+            fetch('/admin/api/proprietario/sites')
+                .then(response => response.json())
+                .then(data => {
+                    sites = data.sites || [];
+                    renderizarSites();
+                })
+                .catch(() => mostrarMensagem('Erro ao carregar sites', 'erro'));
+        }
+        
+        function renderizarSites() {
+            const container = document.getElementById('sitesList');
+            if (!sites.length) {
+                container.innerHTML = '<div class="empty-message">Nenhum site cadastrado no WAAS.</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            sites.forEach(site => {
+                const empresa = empresas.find(e => e.id === site.empresa_id);
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-nome"><i class="fa-solid fa-globe"></i> ${site.nome}</div>
+                        <div class="item-detalhes">Código Identificador: ${site.id} | Empresa Vinculada: ${empresa ? empresa.nome : 'Nenhum vínculo'}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-warning btn-pequeno" onclick="abrirEdicaoSite(${site.id}, '${site.nome.replace(/'/g, "\\'")}')"><i class="fa-solid fa-pencil"></i> Editar</button>
+                        <button class="btn btn-danger btn-pequeno" onclick="excluirSite(${site.id})"><i class="fa-solid fa-trash-can"></i> Excluir</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function adicionarSite() {
+            const nome = document.getElementById('siteNome').value.trim();
+            const empresa_id = document.getElementById('siteEmpresa').value;
+            
+            if (!nome) {
+                mostrarMensagem('Digite o nome do site', 'erro');
+                return;
+            }
+            if (!empresa_id) {
+                mostrarMensagem('Selecione uma empresa vinculada', 'erro');
+                return;
+            }
+            
+            fetch('/admin/api/proprietario/sites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nome, empresa_id: parseInt(empresa_id) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Site criado com sucesso!', 'sucesso');
+                    document.getElementById('siteNome').value = '';
+                    document.getElementById('siteEmpresa').value = '';
+                    carregarSites();
+                    carregarSitesParaSelect();
+                } else {
+                    mostrarMensagem(data.erro || 'Erro ao criar site', 'erro');
+                }
+            });
+        }
+        
+        // Modal de edição do site
+        function abrirEdicaoSite(id, nome) {
+            editandoTipo = 'site';
+            editandoId = id;
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pencil"></i> Editar Nome do Site';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-group">
+                    <label>Nome do Site</label>
+                    <input type="text" id="editValor" value="${nome}">
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        
+        function excluirSite(id) {
+            if (confirm('Tem certeza de que deseja remover este site? Os usuários não poderão mais acessá-lo.')) {
+                fetch(`/admin/api/proprietario/sites?id=${id}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.sucesso) {
+                            mostrarMensagem('Site excluído com sucesso!', 'sucesso');
+                            carregarSites();
+                            carregarSitesParaSelect();
+                        } else {
+                            mostrarMensagem(data.erro || 'Erro ao excluir.', 'erro');
+                        }
+                    });
+            }
+        }
+        
+        function carregarSitesParaSelect() {
+            fetch('/admin/api/proprietario/sites')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('userSite');
+                    select.innerHTML = '<option value="">Selecione um site</option>';
+                    (data.sites || []).forEach(site => {
+                        select.innerHTML += `<option value="${site.id}">${site.nome}</option>`;
+                    });
+                });
+        }
+        
+        // ========== USUÁRIOS ==========
+        function carregarUsuarios() {
+            fetch('/admin/api/proprietario/usuarios')
+                .then(response => response.json())
+                .then(data => {
+                    usuarios = data.usuarios || [];
+                    renderizarUsuarios();
+                })
+                .catch(() => mostrarMensagem('Erro ao carregar usuários', 'erro'));
+        }
+        
+        function renderizarUsuarios() {
+            const container = document.getElementById('usuariosList');
+            if (!usuarios.length) {
+                container.innerHTML = '<div class="empty-message">Nenhum usuário cadastrado.</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            usuarios.forEach(usuario => {
+                const empresa = empresas.find(e => e.id === usuario.empresa_id);
+                const site = sites.find(s => s.id === usuario.site_id);
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-nome">
+                            <i class="fa-regular fa-user"></i> ${usuario.nome}
+                            ${usuario.ativo === 'S' 
+                                ? '<span class="status-badge" style="background:#48bb78;color:white;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:10px;font-weight:600;display:inline-block;vertical-align:middle;">Ativo</span>' 
+                                : '<span class="status-badge" style="background:#f56565;color:white;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:10px;font-weight:600;display:inline-block;vertical-align:middle;">Inativo</span>'
+                            }
+                        </div>
+                        <div class="item-detalhes">
+                            E-mail: ${usuario.email} | Nível: ${usuario.tipo === 'admin' ? 'Administrador' : 'Usuário Comum'}<br>
+                            Empresa: ${empresa ? empresa.nome : 'Nenhum vínculo'} | Site: ${site ? site.nome : 'Nenhum vínculo'}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-warning btn-pequeno" onclick="abrirEdicaoUsuario(${usuario.id})"><i class="fa-solid fa-pencil"></i> Editar</button>
+                        <button class="btn btn-danger btn-pequeno" onclick="excluirUsuario(${usuario.id})"><i class="fa-solid fa-trash-can"></i> Excluir</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function adicionarUsuario() {
+            const nome = document.getElementById('userNome').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const senha = document.getElementById('userSenha').value;
+            const tipo = document.getElementById('userTipo').value;
+            const empresa_id = document.getElementById('userEmpresa').value;
+            const site_id = document.getElementById('userSite').value;
+            const ativo = document.getElementById('userAtivo').value;
+            
+            if (!nome || !email || !senha) {
+                mostrarMensagem('Preencha os campos obrigatórios (nome, email e senha).', 'erro');
+                return;
+            }
+            
+            const dados = {
+                nome: nome,
+                email: email,
+                senha: senha,
+                tipo: tipo,
+                empresa_id: empresa_id ? parseInt(empresa_id) : null,
+                site_id: site_id ? parseInt(site_id) : null,
+                ativo: ativo
+            };
+            
+            fetch('/admin/api/proprietario/usuarios', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Usuário criado com sucesso!', 'sucesso');
+                    document.getElementById('userNome').value = '';
+                    document.getElementById('userEmail').value = '';
+                    document.getElementById('userSenha').value = '';
+                    document.getElementById('userAtivo').value = 'S';
+                    carregarUsuarios();
+                    carregarUsuariosParaSelectPermissao();
+                } else {
+                    mostrarMensagem(data.erro || 'Erro ao criar usuário', 'erro');
+                }
+            });
+        }
+        
+        function abrirEdicaoUsuario(id) {
+            const usuario = usuarios.find(u => u.id === id);
+            if (!usuario) return;
+            
+            editandoTipo = 'usuario';
+            editandoId = id;
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pencil"></i> Editar Dados do Usuário';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="editNome" value="${usuario.nome.replace(/'/g, "\\'")}">
+                </div>
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="editEmail" value="${usuario.email}">
+                </div>
+                <div class="form-group">
+                    <label>Nova Senha (deixe em branco para manter a atual)</label>
+                    <input type="password" id="editSenha" placeholder="Digite uma nova senha">
+                </div>
+                <div class="form-group">
+                    <label>Perfil de Acesso</label>
+                    <select id="editTipo">
+                        <option value="admin" ${usuario.tipo === 'admin' ? 'selected' : ''}>Administrador</option>
+                        <option value="user" ${usuario.tipo === 'user' ? 'selected' : ''}>Usuário Comum</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Empresa Vinculada</label>
+                    <select id="editEmpresa">
+                        <option value="">Nenhuma empresa</option>
+                        ${empresas.map(e => `<option value="${e.id}" ${usuario.empresa_id === e.id ? 'selected' : ''}>${e.nome}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Site Vinculado</label>
+                    <select id="editSite">
+                        <option value="">Nenhum site</option>
+                        ${sites.map(s => `<option value="${s.id}" ${usuario.site_id === s.id ? 'selected' : ''}>${s.nome}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Ativo (Acesso Liberado)</label>
+                    <select id="editAtivo">
+                        <option value="S" ${usuario.ativo === 'S' ? 'selected' : ''}>Sim</option>
+                        <option value="N" ${usuario.ativo === 'N' ? 'selected' : ''}>Não</option>
+                    </select>
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        
+        function excluirUsuario(id) {
+            if (confirm('Tem certeza de que deseja remover este usuário?')) {
+                fetch(`/admin/api/proprietario/usuarios?id=${id}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.sucesso) {
+                            mostrarMensagem('Usuário removido com sucesso!', 'sucesso');
+                            carregarUsuarios();
+                            carregarUsuariosParaSelectPermissao();
+                        } else {
+                            mostrarMensagem(data.erro || 'Erro ao excluir.', 'erro');
+                        }
+                    });
+            }
+        }
+        
+        // ========== CLIENTES (Personalização) ==========
+        function carregarClientes() {
+            fetch('/admin/api/proprietario/clientes')
+                .then(response => response.json())
+                .then(data => {
+                    clientes = data.clientes || [];
+                    const select = document.getElementById('selectCliente');
+                    select.innerHTML = '<option value="">Selecione um cliente para personalizar...</option>';
+                    clientes.forEach(cliente => {
+                        select.innerHTML += `<option value="${cliente.usuario_id}">${cliente.nome_fantasia} (${cliente.usuario_email})</option>`;
+                    });
+                })
+                .catch(() => mostrarMensagem('Erro ao carregar clientes', 'erro'));
+        }
+        
+        function carregarDadosCliente() {
+            const usuarioId = document.getElementById('selectCliente').value;
+            if (!usuarioId) {
+                document.getElementById('personalizacaoForm').style.display = 'none';
+                return;
+            }
+            
+            const cliente = clientes.find(c => c.usuario_id == usuarioId);
+            if (cliente) {
+                document.getElementById('editNomeFantasia').value = cliente.nome_fantasia || '';
+                document.getElementById('editUrlAmigavel').value = cliente.url_amigavel || '';
+                document.getElementById('editWhatsapp').value = cliente.whatsapp || '';
+                document.getElementById('editCorPrimaria').value = cliente.cor_primaria || '#667eea';
+                document.getElementById('editCorSecundaria').value = cliente.cor_secundaria || '#764ba2';
+                document.getElementById('editCorTerciaria').value = cliente.cor_terciaria || '#48bb78';
+                document.getElementById('editLogoUrl').value = cliente.logo_url || '';
+                
+                // Atualizar o href do botão do editor de layout
+                document.getElementById('btnAbrirLayoutEditor').href = `/admin/layout?cliente_id=${cliente.id || ''}`;
+                
+                document.getElementById('personalizacaoForm').style.display = 'block';
+                window.usuarioAtualId = usuarioId;
+            }
+        }
+        
+        function salvarPersonalizacao() {
+            const dados = {
+                usuario_id: window.usuarioAtualId,
+                nome_fantasia: document.getElementById('editNomeFantasia').value,
+                url_amigavel: document.getElementById('editUrlAmigavel').value,
+                whatsapp: document.getElementById('editWhatsapp').value,
+                cor_primaria: document.getElementById('editCorPrimaria').value,
+                cor_secundaria: document.getElementById('editCorSecundaria').value,
+                cor_terciaria: document.getElementById('editCorTerciaria').value,
+                logo_url: document.getElementById('editLogoUrl').value
+            };
+            
+            fetch('/admin/api/proprietario/clientes/personalizar', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Branding e personalização salvos com sucesso!', 'sucesso');
+                    carregarClientes();
+                } else {
+                    mostrarMensagem(data.erro || 'Erro ao salvar branding', 'erro');
+                }
+            });
+        }
+        
+        // ========== PERMISSÕES ==========
+        function carregarUsuariosParaSelectPermissao() {
+            fetch('/admin/api/proprietario/usuarios')
+                .then(response => response.json())
+                .then(data => {
+                    usuarios = data.usuarios || [];
+                    const select = document.getElementById('selectUsuarioPermissao');
+                    select.innerHTML = '<option value="">Selecione um usuário...</option>';
+                    usuarios.forEach(usuario => {
+                        select.innerHTML += `<option value="${usuario.id}">${usuario.nome} (${usuario.email})</option>`;
+                    });
+                });
+        }
+        
+        function carregarPermissoesUsuario() {
+            const usuarioId = document.getElementById('selectUsuarioPermissao').value;
+            if (!usuarioId) {
+                document.getElementById('permissoesForm').style.display = 'none';
+                return;
+            }
+            
+            usuarioPermissaoAtual = usuarioId;
+            
+            fetch(`/admin/api/proprietario/usuarios/${usuarioId}/permissoes`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        const p = data.permissoes;
+                        // Dashboard
+                        document.getElementById('permDashboardTitulo').value = p.nome_dashboard?.titulo || '';
+                        document.getElementById('permDashboardIcone').value = p.nome_dashboard?.icone || 'fa-chart-line';
+                        document.getElementById('permDashboardAtivo').checked = p.nome_dashboard?.ativo === true;
+                        // Agenda
+                        document.getElementById('permAgendaTitulo').value = p.configurar_agenda?.titulo || '';
+                        document.getElementById('permAgendaIcone').value = p.configurar_agenda?.icone || 'fa-calendar-days';
+                        document.getElementById('permAgendaDescricao').value = p.configurar_agenda?.descricao || '';
+                        document.getElementById('permAgendaAtivo').checked = p.configurar_agenda?.ativo === true;
+                        // Serviços
+                        document.getElementById('permServicoTitulo').value = p.gerenciar_servico?.titulo || '';
+                        document.getElementById('permServicoIcone').value = p.gerenciar_servico?.icone || 'fa-scissors';
+                        document.getElementById('permServicoDescricao').value = p.gerenciar_servico?.descricao || '';
+                        document.getElementById('permServicoAtivo').checked = p.gerenciar_servico?.ativo === true;
+                        // Promoções
+                        document.getElementById('permPromocaoTitulo').value = p.promocoes?.titulo || '';
+                        document.getElementById('permPromocaoIcone').value = p.promocoes?.icone || 'fa-tags';
+                        document.getElementById('permPromocaoDescricao').value = p.promocoes?.descricao || '';
+                        document.getElementById('permPromocaoAtivo').checked = p.promocoes?.ativo === true;
+                        // Clientes
+                        document.getElementById('permClienteTitulo').value = p.gerenciar_clientes?.titulo || '';
+                        document.getElementById('permClienteIcone').value = p.gerenciar_clientes?.icone || 'fa-users';
+                        document.getElementById('permClienteDescricao').value = p.gerenciar_clientes?.descricao || '';
+                        document.getElementById('permClienteBotao').value = p.gerenciar_clientes?.botao || 'Em breve';
+                        document.getElementById('permClienteAtivo').checked = p.gerenciar_clientes?.ativo === true;
+                        
+                        // Aparência
+                        document.getElementById('permAparenciaTitulo').value = p.personalizar_aparencia?.titulo || '';
+                        document.getElementById('permAparenciaIcone').value = p.personalizar_aparencia?.icone || 'fa-palette';
+                        document.getElementById('permAparenciaDescricao').value = p.personalizar_aparencia?.descricao || '';
+                        document.getElementById('permAparenciaAtivo').checked = p.personalizar_aparencia?.ativo === true;
+                        document.getElementById('permAparenciaTituloSite').value = p.personalizar_aparencia?.titulo_site || '';
+                        document.getElementById('permAparenciaCorpoSite').value = p.personalizar_aparencia?.corpo_site || '';
+                        document.getElementById('permAparenciaSobreTitulo').value = p.personalizar_aparencia?.sobre_titulo || '';
+                        document.getElementById('permAparenciaSobreTexto1').value = p.personalizar_aparencia?.sobre_texto1 || '';
+                        document.getElementById('permAparenciaSobreTexto2').value = p.personalizar_aparencia?.sobre_texto2 || '';
+
+                        // Ofertas
+                        document.getElementById('permOfertasTitulo').value = p.gerenciar_ofertas?.titulo || '';
+                        document.getElementById('permOfertasIcone').value = p.gerenciar_ofertas?.icone || 'fa-house';
+                        document.getElementById('permOfertasDescricao').value = p.gerenciar_ofertas?.descricao || '';
+                        document.getElementById('permOfertasAtivo').checked = p.gerenciar_ofertas?.ativo === true;
+
+                        // Imagens de Serviços
+                        document.getElementById('permImagensServicosTitulo').value = p.imagens_servicos?.titulo || '';
+                        document.getElementById('permImagensServicosIcone').value = p.imagens_servicos?.icone || 'fa-images';
+                        document.getElementById('permImagensServicosDescricao').value = p.imagens_servicos?.descricao || '';
+                        document.getElementById('permImagensServicosAtivo').checked = p.imagens_servicos?.ativo === true;
+                        
+                        // Lógica de exibição com base no site_id
+                        const usr = usuarios.find(u => u.id == usuarioId);
+                        if (usr && usr.site_id == 4) {
+                            document.getElementById('cardPermOfertas').style.display = 'block';
+                            document.getElementById('cardPermImagensServicos').style.display = 'none';
+                        } else {
+                            document.getElementById('cardPermOfertas').style.display = 'none';
+                            document.getElementById('cardPermImagensServicos').style.display = 'block';
+                        }
+
+                        document.getElementById('permissoesForm').style.display = 'block';
+                    }
+                });
+        }
+        
+        function salvarPermissoes() {
+            if (!usuarioPermissaoAtual) return;
+            
+            const permissoes = {
+                nome_dashboard: {
+                    titulo: document.getElementById('permDashboardTitulo').value,
+                    icone: document.getElementById('permDashboardIcone').value,
+                    ativo: document.getElementById('permDashboardAtivo').checked
+                },
+                configurar_agenda: {
+                    titulo: document.getElementById('permAgendaTitulo').value,
+                    icone: document.getElementById('permAgendaIcone').value,
+                    descricao: document.getElementById('permAgendaDescricao').value,
+                    ativo: document.getElementById('permAgendaAtivo').checked
+                },
+                gerenciar_servico: {
+                    titulo: document.getElementById('permServicoTitulo').value,
+                    icone: document.getElementById('permServicoIcone').value,
+                    descricao: document.getElementById('permServicoDescricao').value,
+                    ativo: document.getElementById('permServicoAtivo').checked
+                },
+                promocoes: {
+                    titulo: document.getElementById('permPromocaoTitulo').value,
+                    icone: document.getElementById('permPromocaoIcone').value,
+                    descricao: document.getElementById('permPromocaoDescricao').value,
+                    ativo: document.getElementById('permPromocaoAtivo').checked
+                },
+                gerenciar_clientes: {
+                    titulo: document.getElementById('permClienteTitulo').value,
+                    icone: document.getElementById('permClienteIcone').value,
+                    descricao: document.getElementById('permClienteDescricao').value,
+                    botao: document.getElementById('permClienteBotao').value,
+                    ativo: document.getElementById('permClienteAtivo').checked
+                },
+                personalizar_aparencia: {
+                    titulo: document.getElementById('permAparenciaTitulo').value,
+                    icone: document.getElementById('permAparenciaIcone').value,
+                    descricao: document.getElementById('permAparenciaDescricao').value,
+                    ativo: document.getElementById('permAparenciaAtivo').checked,
+                    titulo_site: document.getElementById('permAparenciaTituloSite').value,
+                    corpo_site: document.getElementById('permAparenciaCorpoSite').value,
+                    sobre_titulo: document.getElementById('permAparenciaSobreTitulo').value,
+                    sobre_texto1: document.getElementById('permAparenciaSobreTexto1').value,
+                    sobre_texto2: document.getElementById('permAparenciaSobreTexto2').value
+                },
+                gerenciar_ofertas: {
+                    titulo: document.getElementById('permOfertasTitulo').value,
+                    icone: document.getElementById('permOfertasIcone').value,
+                    descricao: document.getElementById('permOfertasDescricao').value,
+                    ativo: document.getElementById('permOfertasAtivo').checked
+                },
+                imagens_servicos: {
+                    titulo: document.getElementById('permImagensServicosTitulo').value,
+                    icone: document.getElementById('permImagensServicosIcone').value,
+                    descricao: document.getElementById('permImagensServicosDescricao').value,
+                    ativo: document.getElementById('permImagensServicosAtivo').checked
+                }
+            };
+            
+            fetch('/admin/api/proprietario/usuarios/permissoes', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario_id: parseInt(usuarioPermissaoAtual), permissoes: permissoes })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Permissões de acesso salvas com sucesso!', 'sucesso');
+                } else {
+                    mostrarMensagem('Erro ao salvar permissões do usuário.', 'erro');
+                }
+            });
+        }
+        
+        function salvarEdicao() {
+            if (editandoTipo === 'empresa') {
+                const novoNome = document.getElementById('editValor').value.trim();
+                const novoEndereco = document.getElementById('editEndereco').value.trim();
+                if (!novoNome) {
+                    mostrarMensagem('O nome da empresa é obrigatório.', 'erro');
+                    return;
+                }
+                fetch('/admin/api/proprietario/empresa/atualizar', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: editandoId, nome: novoNome, endereco: novoEndereco })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        mostrarMensagem('Empresa updated!', 'sucesso');
+                        fecharModal();
+                        carregarEmpresas();
+                        carregarEmpresasParaSelect();
+                        carregarEmpresasParaSelectSite();
+                    } else {
+                        mostrarMensagem(data.erro || 'Erro ao atualizar.', 'erro');
+                    }
+                });
+            } else if (editandoTipo === 'site') {
+                const novoNome = document.getElementById('editValor').value.trim();
+                if (!novoNome) {
+                    mostrarMensagem('O nome do site é obrigatório.', 'erro');
+                    return;
+                }
+                fetch('/admin/api/proprietario/sites', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: editandoId, nome: novoNome })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        mostrarMensagem('Site atualizado!', 'sucesso');
+                        fecharModal();
+                        carregarSites();
+                        carregarSitesParaSelect();
+                    } else {
+                        mostrarMensagem(data.erro || 'Erro ao atualizar.', 'erro');
+                    }
+                });
+            } else if (editandoTipo === 'usuario') {
+                const nome = document.getElementById('editNome').value.trim();
+                const email = document.getElementById('editEmail').value.trim();
+                const senha = document.getElementById('editSenha').value;
+                const tipo = document.getElementById('editTipo').value;
+                const empresa_id = document.getElementById('editEmpresa').value;
+                const site_id = document.getElementById('editSite').value;
+                const ativo = document.getElementById('editAtivo').value;
+                
+                if (!nome || !email) {
+                    mostrarMensagem('Preencha os campos obrigatórios (nome e email).', 'erro');
+                    return;
+                }
+                
+                const dados = {
+                    id: editandoId,
+                    nome: nome,
+                    email: email,
+                    tipo: tipo,
+                    empresa_id: empresa_id ? parseInt(empresa_id) : null,
+                    site_id: site_id ? parseInt(site_id) : null,
+                    ativo: ativo
+                };
+                if (senha) dados.senha = senha;
+                
+                fetch('/admin/api/proprietario/usuarios', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        mostrarMensagem('Usuário atualizado com sucesso!', 'sucesso');
+                        fecharModal();
+                        carregarUsuarios();
+                        carregarUsuariosParaSelectPermissao();
+                    } else {
+                        mostrarMensagem(data.erro || 'Erro ao atualizar usuário', 'erro');
+                    }
+                });
+            }
+        }
+        
+        function fecharModal() {
+            document.getElementById('editModal').style.display = 'none';
+            editandoTipo = null;
+            editandoId = null;
+        }
+        
+        // Inicialização
+        carregarEmpresas();
+        carregarSites();
+        carregarUsuarios();
+        carregarEmpresasParaSelect();
+        carregarEmpresasParaSelectSite();
+        carregarSitesParaSelect();
+        carregarClientes();
+        carregarUsuariosParaSelectPermissao();
+    </script>
+</body>
+</html>

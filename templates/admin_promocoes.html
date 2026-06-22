@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Promoções | {{ cliente.nome_fantasia }}</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: {{ cores.cor_primaria | default('#6366f1') }};
+            --secondary: {{ cores.cor_secundaria | default('#764ba2') }};
+            --border: #334155;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            max-height: 40px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text i {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .welcome-msg {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .welcome-msg strong {
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .logout-btn {
+            background-color: #f43f5e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #e11d48;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 24px;
+            flex-grow: 1;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .checkbox-group label {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-group label:has(input:checked) {
+            border-color: var(--primary);
+            background-color: rgba(99, 102, 241, 0.05);
+            color: var(--primary);
+        }
+
+        .checkbox-group label input {
+            cursor: pointer;
+        }
+
+        .servicos-promo {
+            border: 1px solid var(--border);
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .servico-item-promo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 8px 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .servico-item-promo:hover {
+            border-color: var(--primary);
+        }
+
+        .servico-item-promo input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .servico-nome {
+            font-size: 14px;
+            color: var(--text-main);
+            flex-grow: 1;
+        }
+
+        .servico-preco {
+            width: 140px;
+            padding: 6px 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .servico-preco:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: var(--warning-hover);
+        }
+
+        .promocoes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .promocao-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .promocao-item:hover {
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .promocao-info {
+            flex: 1;
+        }
+
+        .promocao-nome {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+
+        .status-ativa {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-inativa {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .promocao-detalhes {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .promocao-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .toast-message {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 1001;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .promocao-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .promocao-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            header {
+                padding: 16px 24px;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .user-nav {
+                flex-direction: column;
+                width: 100%;
+            }
+            .nav-links {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            {% if cliente.logo_url %}
+                <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
+            {% else %}
+                <div class="logo-text">
+                    <i class="fa-solid fa-scissors"></i>
+                    <span>{{ cliente.nome_fantasia }}</span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="user-nav">
+            <span class="welcome-msg">Olá, <strong>{{ admin_nome }}</strong></span>
+            
+            <div class="nav-links">
+                <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
+                <a href="/admin/agenda" class="nav-link"><i class="fa-regular fa-calendar-days"></i> Agenda</a>
+                <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-scissors"></i> Serviços</a>
+            </div>
+            
+            <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="panel-title">
+            <i class="fa-solid fa-tags"></i> Gerenciar Promoções e Ofertas
+        </div>
+
+        <div class="card">
+            <div class="card-title" id="formTitle"><i class="fa-solid fa-plus"></i> Adicionar Nova Promoção</div>
+            <div class="form-group">
+                <label>Nome da Promoção / Combo</label>
+                <input type="text" id="promoNome" placeholder="Ex: Terça de Beleza, Pacote de Verão">
+            </div>
+            
+            <div class="form-group">
+                <label>Selecione os Serviços Inclusos e os Preços Promocionais</label>
+                <div id="servicosListaPromo" class="servicos-promo">
+                    <div class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Carregando catálogo de serviços...</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Vigência e Validade</label>
+                <div class="checkbox-group" style="margin-bottom: 12px;">
+                    <label><input type="radio" name="periodoTipo" value="indeterminado" checked> Sem data de expiração</label>
+                    <label><input type="radio" name="periodoTipo" value="periodo"> Período específico</label>
+                </div>
+                <div id="campoDatas" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data Inicial</label>
+                            <input type="date" id="dataInicio">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Final</label>
+                            <input type="date" id="dataFim">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Restrição por Dias da Semana</label>
+                <div class="checkbox-group" style="margin-bottom: 12px;">
+                    <label><input type="radio" name="diasTipo" value="todos" checked> Válida todos os dias</label>
+                    <label><input type="radio" name="diasTipo" value="especificos"> Apenas dias específicos</label>
+                </div>
+                <div id="campoDiasSemana" style="display: none;" class="checkbox-group">
+                    <label><input type="checkbox" value="0"> Dom</label>
+                    <label><input type="checkbox" value="1"> Seg</label>
+                    <label><input type="checkbox" value="2"> Ter</label>
+                    <label><input type="checkbox" value="3"> Qua</label>
+                    <label><input type="checkbox" value="4"> Qui</label>
+                    <label><input type="checkbox" value="5"> Sex</label>
+                    <label><input type="checkbox" value="6"> Sáb</label>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="salvarPromocao()"><i class="fa-solid fa-floppy-disk"></i> Salvar Promoção</button>
+            <button class="btn btn-danger" id="btnCancelarEdicao" style="display: none;" onclick="limparFormulario()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+        </div>
+        
+        <div class="card">
+            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fa-solid fa-list-check"></i> Ofertas Ativas</span>
+                <button class="btn btn-primary btn-sm" onclick="carregarPromocoes()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+            </div>
+            <div id="promocoesList" class="promocoes-list">
+                <div class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Carregando promoções cadastradas...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast-message" style="display: none;"></div>
+
+    <script>
+        let servicos = [];
+        let promocoes = [];
+        let editandoId = null;
+        
+        function mostrarMensagem(msg, tipo) {
+            const toast = document.getElementById('toast');
+            toast.style.background = tipo === 'sucesso' ? 'var(--success)' : 'var(--danger)';
+            toast.innerHTML = (tipo === 'sucesso' ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-xmark"></i> ') + msg;
+            toast.style.display = 'flex';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+        
+        function carregarServicosParaPromo() {
+            fetch('/admin/api/servicos')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        servicos = data.servicos;
+                        renderizarListaServicos();
+                    } else {
+                        mostrarMensagem('Erro ao carregar serviços', 'erro');
+                    }
+                });
+        }
+        
+        function renderizarListaServicos(selecionados = null) {
+            const container = document.getElementById('servicosListaPromo');
+            if (!servicos.length) {
+                container.innerHTML = '<div class="empty-message">Cadastre serviços no catálogo para criar promoções.</div>';
+                return;
+            }
+            
+            let html = '';
+            servicos.forEach((serv, idx) => {
+                let servObj = typeof serv === 'string' ? JSON.parse(serv) : serv;
+                let checked = '';
+                let precoPromo = '';
+                if (selecionados && selecionados.some(s => s.servico_id === servObj.id)) {
+                    checked = 'checked';
+                    const found = selecionados.find(s => s.servico_id === servObj.id);
+                    precoPromo = found.preco_promocional;
+                }
+                html += `
+                    <div class="servico-item-promo">
+                        <input type="checkbox" class="servico-check" value="${servObj.id}" ${checked} data-nome="${servObj.nome}" data-preco-original="${servObj.valor}">
+                        <span class="servico-nome">${servObj.nome} <small style="color: var(--text-muted);">(original: R$ ${servObj.valor.toFixed(2)})</small></span>
+                        <input type="number" step="0.01" class="servico-preco" placeholder="Preço Promo (R$)" value="${precoPromo}" ${checked ? '' : 'disabled'}>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            
+            document.querySelectorAll('.servico-check').forEach(chk => {
+                chk.addEventListener('change', function() {
+                    const precoInput = this.closest('.servico-item-promo').querySelector('.servico-preco');
+                    precoInput.disabled = !this.checked;
+                    if (!this.checked) precoInput.value = '';
+                });
+            });
+        }
+        
+        document.querySelectorAll('input[name="periodoTipo"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('campoDatas').style.display = this.value === 'periodo' ? 'block' : 'none';
+            });
+        });
+        document.querySelectorAll('input[name="diasTipo"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('campoDiasSemana').style.display = this.value === 'especificos' ? 'flex' : 'none';
+            });
+        });
+        
+        function getDiasSelecionados() {
+            if (document.querySelector('input[name="diasTipo"]:checked').value === 'todos') return null;
+            const checkboxes = document.querySelectorAll('#campoDiasSemana input:checked');
+            return Array.from(checkboxes).map(cb => parseInt(cb.value));
+        }
+        
+        function getServicosPromocao() {
+            const items = [];
+            document.querySelectorAll('.servico-check:checked').forEach(chk => {
+                const servicoId = parseInt(chk.value);
+                const precoInput = chk.closest('.servico-item-promo').querySelector('.servico-preco');
+                const preco = parseFloat(precoInput.value);
+                if (isNaN(preco) || preco < 0) {
+                    mostrarMensagem('Informe o valor promocional dos serviços selecionados.', 'erro');
+                    throw new Error('Preço promocional inválido.');
+                }
+                items.push({ servico_id: servicoId, preco_promocional: preco });
+            });
+            return items;
+        }
+        
+        function salvarPromocao() {
+            const nome = document.getElementById('promoNome').value.trim();
+            if (!nome) { mostrarMensagem('O nome da promoção é obrigatório.', 'erro'); return; }
+            
+            let servicosPromo;
+            try { servicosPromo = getServicosPromocao(); } catch(e) { return; }
+            if (servicosPromo.length === 0) { mostrarMensagem('Selecione ao menos um serviço para a promoção.', 'erro'); return; }
+            
+            const periodoRadio = document.querySelector('input[name="periodoTipo"]:checked').value;
+            let dataInicio = null, dataFim = null;
+            if (periodoRadio === 'periodo') {
+                dataInicio = document.getElementById('dataInicio').value;
+                dataFim = document.getElementById('dataFim').value;
+                if (!dataInicio || !dataFim) { mostrarMensagem('Por favor, informe o período inicial e final.', 'erro'); return; }
+                if (dataInicio > dataFim) { mostrarMensagem('A data final deve ser maior que a data inicial.', 'erro'); return; }
+            }
+            
+            const diasSemana = getDiasSelecionados();
+            const ativa = true;
+            
+            const dados = {
+                id: editandoId,
+                nome: nome,
+                data_inicio: dataInicio,
+                data_fim: dataFim,
+                ativa: ativa,
+                detalhes: {
+                    servicos: servicosPromo,
+                    dias_semana: diasSemana
+                }
+            };
+            
+            fetch('/admin/api/promocoes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem('Promoção salva com sucesso!', 'sucesso');
+                    limparFormulario();
+                    carregarPromocoes();
+                } else {
+                    mostrarMensagem('Erro ao salvar promoção.', 'erro');
+                }
+            });
+        }
+        
+        function limparFormulario() {
+            document.getElementById('promoNome').value = '';
+            document.getElementById('dataInicio').value = '';
+            document.getElementById('dataFim').value = '';
+            document.querySelector('input[name="periodoTipo"][value="indeterminado"]').checked = true;
+            document.querySelector('input[name="diasTipo"][value="todos"]').checked = true;
+            document.getElementById('campoDatas').style.display = 'none';
+            document.getElementById('campoDiasSemana').style.display = 'none';
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar Nova Promoção';
+            document.getElementById('btnCancelarEdicao').style.display = 'none';
+            editandoId = null;
+            carregarServicosParaPromo();
+        }
+        
+        function carregarPromocoes() {
+            fetch('/admin/api/promocoes')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        promocoes = data.promocoes;
+                        renderizarListaPromocoes();
+                    } else {
+                        mostrarMensagem('Erro ao carregar promoções.', 'erro');
+                    }
+                });
+        }
+        
+        function renderizarListaPromocoes() {
+            const container = document.getElementById('promocoesList');
+            if (!promocoes.length) {
+                container.innerHTML = '<div class="empty-message">Nenhuma promoção ativa cadastrada.</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            promocoes.forEach(promo => {
+                const div = document.createElement('div');
+                div.className = 'promocao-item';
+                const servicosNomes = promo.detalhes.servicos ? promo.detalhes.servicos.map(s => {
+                    const serv = servicos.find(ss => (typeof ss === 'string' ? JSON.parse(ss).id : ss.id) === s.servico_id);
+                    const nomeServ = serv ? (typeof serv === 'string' ? JSON.parse(serv).nome : serv.nome) : 'Serviço Removido';
+                    return `${nomeServ} (R$ ${s.preco_promocional.toFixed(2)})`;
+                }).join(', ') : '';
+                const validade = promo.data_fim ? `Validade: ${promo.data_inicio} a ${promo.data_fim}` : 'Validade por tempo indeterminado';
+                const dias = promo.detalhes.dias_semana ? `Dias: ${promo.detalhes.dias_semana.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d]).join(', ')}` : 'Válida todos os dias';
+                
+                const isAtiva = promo.ativa === 'S';
+                const badgeClass = isAtiva ? 'status-badge status-ativa' : 'status-badge status-inativa';
+                const statusTexto = isAtiva ? 'Ativa' : 'Inativa';
+                
+                div.innerHTML = `
+                    <div class="promocao-info">
+                        <div class="promocao-nome">
+                            <span>${promo.nome}</span>
+                            <span class="${badgeClass}">${statusTexto}</span>
+                        </div>
+                        <div class="promocao-detalhes">
+                            <div><i class="fa-regular fa-calendar-days"></i> ${validade} | ${dias}</div>
+                            <div style="color: var(--primary); font-weight: 500; margin-top: 4px;"><i class="fa-solid fa-tags"></i> Serviços: ${servicosNomes}</div>
+                        </div>
+                    </div>
+                    <div class="promocao-actions">
+                        <button class="btn ${isAtiva ? 'btn-danger' : 'btn-success'} btn-sm" onclick="alternarStatus(${promo.id}, '${isAtiva ? 'N' : 'S'}')">
+                            ${isAtiva ? '<i class="fa-solid fa-toggle-off"></i> Desativar' : '<i class="fa-solid fa-toggle-on"></i> Ativar'}
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="editarPromocao(${promo.id})"><i class="fa-solid fa-pencil"></i> Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirPromocao(${promo.id})"><i class="fa-solid fa-trash-can"></i> Excluir</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function editarPromocao(id) {
+            const promo = promocoes.find(p => p.id === id);
+            if (!promo) return;
+            editandoId = promo.id;
+            document.getElementById('promoNome').value = promo.nome;
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-pencil"></i> Editar Promoção';
+            document.getElementById('btnCancelarEdicao').style.display = 'inline-flex';
+            
+            const servicosSelecionados = promo.detalhes.servicos || [];
+            renderizarListaServicos(servicosSelecionados);
+            
+            if (promo.data_fim) {
+                document.querySelector('input[name="periodoTipo"][value="periodo"]').checked = true;
+                document.getElementById('campoDatas').style.display = 'block';
+                document.getElementById('dataInicio').value = promo.data_inicio || '';
+                document.getElementById('dataFim').value = promo.data_fim || '';
+            } else {
+                document.querySelector('input[name="periodoTipo"][value="indeterminado"]').checked = true;
+                document.getElementById('campoDatas').style.display = 'none';
+            }
+            
+            if (promo.detalhes.dias_semana && promo.detalhes.dias_semana.length) {
+                document.querySelector('input[name="diasTipo"][value="especificos"]').checked = true;
+                document.getElementById('campoDiasSemana').style.display = 'flex';
+                const diasCheckboxes = document.querySelectorAll('#campoDiasSemana input');
+                diasCheckboxes.forEach(cb => {
+                    cb.checked = promo.detalhes.dias_semana.includes(parseInt(cb.value));
+                });
+            } else {
+                document.querySelector('input[name="diasTipo"][value="todos"]').checked = true;
+                document.getElementById('campoDiasSemana').style.display = 'none';
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function toggleDiaConfig(data) {
+            // function stub for backward compatibility if needed
+        }
+        
+        function alternarStatus(id, novoStatus) {
+            fetch(`/admin/api/promocoes/${id}/alternar`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ativa: novoStatus === 'S' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    mostrarMensagem(`Status da promoção alterado com sucesso!`, 'sucesso');
+                    carregarPromocoes();
+                } else {
+                    mostrarMensagem('Erro ao alterar status da promoção.', 'erro');
+                }
+            });
+        }
+        
+        function excluirPromocao(id) {
+            if (confirm('Tem certeza de que deseja remover esta promoção?')) {
+                fetch(`/admin/api/promocoes/${id}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        mostrarMensagem('Promoção removida com sucesso!', 'sucesso');
+                        carregarPromocoes();
+                    } else {
+                        mostrarMensagem('Erro ao remover promoção.', 'erro');
+                    }
+                });
+            }
+        }
+        
+        carregarServicosParaPromo();
+        carregarPromocoes();
+    </script>
+</body>
+</html>
