@@ -156,7 +156,11 @@
         </div>
         <div class="nav-links">
             <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Voltar ao Dashboard</a>
+            {% if session.get('site_id') == 5 %}
+            <a href="/admin/buffet" class="nav-link"><i class="fa-solid fa-truck"></i> Organizar Entregas</a>
+            {% else %}
             <a href="/admin/clientes" class="nav-link"><i class="fa-solid fa-users"></i> Clientes</a>
+            {% endif %}
         </div>
     </header>
 

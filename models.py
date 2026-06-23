@@ -11,11 +11,12 @@ class AdminModel:
         
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT U.ID, U.NOME, U.EMAIL, U.TIPO, U.SENHA, U.EMPRESA_ID, U.SITE_ID, U.CLIENTE_ID,
+            SELECT U.ID, U.NOME, U.EMAIL, U.TIPO, U.SENHA, U.EMPRESA_ID, COALESCE(U.SITE_ID, E.SITE_ID, 1) AS SITE_ID, C.ID,
                    C.NOME_FANTASIA, C.COR_PRIMARIA, C.COR_SECUNDARIA, C.COR_TERCIARIA, C.LOGO_URL, 
                    C.WHATSAPP_NUMERO, C.URL_AMIGAVEL, C.LAYOUT_CONFIG, U.ATIVO
             FROM TESTE.USUARIOS U
-            LEFT JOIN TESTE.CLIENTES C ON U.CLIENTE_ID = C.ID
+            LEFT JOIN TESTE.EMPRESA E ON E.id = U.EMPRESA_ID
+            LEFT JOIN TESTE.CLIENTES C ON C.ID = U.CLIENTE_ID OR (U.CLIENTE_ID IS NULL AND C.USUARIO_ID = U.ID)
             WHERE U.EMAIL = ?
         """, (email,))
         
@@ -379,19 +380,27 @@ class AdminModel:
             return False
     
     @staticmethod
-    def carregar_cronograma_semanal(data_inicio):
+    def carregar_cronograma_semanal(data_inicio, usuario_id=None):
         conn = get_db_connection()
         if not conn:
             return {}
         try:
             data_fim = datetime.strptime(data_inicio, '%Y-%m-%d') + timedelta(days=7)
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT DATA, CRONOGRAMA 
-                FROM TESTE.AGENDA 
-                WHERE DATA >= ? AND DATA < ?
-                ORDER BY DATA
-            """, (data_inicio, data_fim.strftime('%Y-%m-%d')))
+            if usuario_id:
+                cursor.execute("""
+                    SELECT DATA, CRONOGRAMA 
+                    FROM TESTE.AGENDA 
+                    WHERE DATA >= ? AND DATA < ? AND USUARIO_ID = ?
+                    ORDER BY DATA
+                """, (data_inicio, data_fim.strftime('%Y-%m-%d'), usuario_id))
+            else:
+                cursor.execute("""
+                    SELECT DATA, CRONOGRAMA 
+                    FROM TESTE.AGENDA 
+                    WHERE DATA >= ? AND DATA < ? AND USUARIO_ID IS NULL
+                    ORDER BY DATA
+                """, (data_inicio, data_fim.strftime('%Y-%m-%d')))
             resultados = cursor.fetchall()
             conn.close()
             cronograma = {}
@@ -407,26 +416,119 @@ class AdminModel:
             return {}
     
     @staticmethod
-    def salvar_cronograma_semanal(data_inicio, config_semana):
+    def salvar_cronograma_semanal(data_inicio, config_semana, usuario_id=None):
         conn = get_db_connection()
         if not conn:
             return False
         try:
             cursor = conn.cursor()
             for data_str, config in config_semana['dias'].items():
-                cursor.execute("SELECT COUNT(*) FROM TESTE.AGENDA WHERE DATA = ?", (data_str,))
+                if usuario_id:
+                    cursor.execute("SELECT COUNT(*) FROM TESTE.AGENDA WHERE DATA = ? AND USUARIO_ID = ?", (data_str, usuario_id))
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM TESTE.AGENDA WHERE DATA = ? AND USUARIO_ID IS NULL", (data_str,))
                 existe = cursor.fetchone()[0] > 0
                 cronograma_json = json.dumps(config)
                 if existe:
-                    cursor.execute("UPDATE TESTE.AGENDA SET CRONOGRAMA = ? WHERE DATA = ?", (cronograma_json, data_str))
+                    if usuario_id:
+                        cursor.execute("UPDATE TESTE.AGENDA SET CRONOGRAMA = ? WHERE DATA = ? AND USUARIO_ID = ?", (cronograma_json, data_str, usuario_id))
+                    else:
+                        cursor.execute("UPDATE TESTE.AGENDA SET CRONOGRAMA = ? WHERE DATA = ? AND USUARIO_ID IS NULL", (cronograma_json, data_str))
                 else:
-                    cursor.execute("INSERT INTO TESTE.AGENDA (DATA, CRONOGRAMA) VALUES (?, ?)", (data_str, cronograma_json))
+                    cursor.execute("INSERT INTO TESTE.AGENDA (DATA, CRONOGRAMA, USUARIO_ID) VALUES (?, ?, ?)", (data_str, cronograma_json, usuario_id))
             conn.commit()
             conn.close()
             return True
         except Exception as e:
             print(f"Erro ao salvar cronograma: {e}")
             conn.close()
+            return False
+
+    @staticmethod
+    def adicionar_entrega(site_id, empresa_id, nome_cliente, prazo, servico_id, observacoes):
+        conn = get_db_connection()
+        if not conn:
+            return False
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO teste.buffets (site_id, empresa_id, nome_cliente, prazo, servico_id, observacoes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (site_id, empresa_id, nome_cliente, prazo, servico_id, observacoes))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Erro ao adicionar entrega: {e}")
+            if 'conn' in locals(): conn.close()
+            return False
+
+    @staticmethod
+    def listar_entregas(site_id, empresa_id, data_filtro=None):
+        conn = get_db_connection()
+        if not conn:
+            return []
+        try:
+            cursor = conn.cursor()
+            if data_filtro:
+                cursor.execute("""
+                    SELECT b.id, b.nome_cliente, b.prazo, b.servico_id, b.observacoes, s.SERVICO
+                    FROM teste.buffets b
+                    LEFT JOIN teste.servicos s ON s.id = b.servico_id
+                    WHERE b.site_id = ? AND b.empresa_id = ? AND b.prazo = ?
+                    ORDER BY b.prazo ASC
+                """, (site_id, empresa_id, data_filtro))
+            else:
+                cursor.execute("""
+                    SELECT b.id, b.nome_cliente, b.prazo, b.servico_id, b.observacoes, s.SERVICO
+                    FROM teste.buffets b
+                    LEFT JOIN teste.servicos s ON s.id = b.servico_id
+                    WHERE b.site_id = ? AND b.empresa_id = ?
+                    ORDER BY b.prazo ASC
+                """, (site_id, empresa_id))
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            entregas = []
+            for row in rows:
+                servico_nome = "Serviço não encontrado"
+                if row[5]:
+                    try:
+                        servico_obj = json.loads(row[5]) if isinstance(row[5], str) else row[5]
+                        if isinstance(servico_obj, dict):
+                            servico_nome = servico_obj.get('nome', servico_nome)
+                    except Exception as e:
+                        print(f"Erro ao parsear servico JSON da entrega: {e}")
+                
+                entregas.append({
+                    'id': row[0],
+                    'nome_cliente': row[1],
+                    'prazo': row[2].strftime('%Y-%m-%d') if row[2] else None,
+                    'servico_id': row[3],
+                    'servico_nome': servico_nome,
+                    'observacoes': row[4]
+                })
+            return entregas
+        except Exception as e:
+            print(f"Erro ao listar entregas: {e}")
+            if 'conn' in locals(): conn.close()
+            return []
+
+    @staticmethod
+    def excluir_entrega(entrega_id):
+        conn = get_db_connection()
+        if not conn:
+            return False
+        try:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM teste.buffets WHERE id = ?", (entrega_id,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Erro ao excluir entrega: {e}")
+            if 'conn' in locals(): conn.close()
             return False
 
     @staticmethod

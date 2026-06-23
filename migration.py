@@ -148,6 +148,16 @@ def run_migration():
             cursor.execute("ALTER TABLE TESTE.EMPRESA ADD ENDERECO NVARCHAR(MAX) NULL;")
             conn.commit()
 
+        # Verificar se a coluna SITE_ID existe em TESTE.EMPRESA
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = 'TESTE' AND TABLE_NAME = 'EMPRESA' AND COLUMN_NAME = 'SITE_ID'
+        """)
+        if cursor.fetchone()[0] == 0:
+            print("Adicionando coluna SITE_ID à tabela TESTE.EMPRESA...")
+            cursor.execute("ALTER TABLE TESTE.EMPRESA ADD SITE_ID INT NULL;")
+            conn.commit()
+
         conn.close()
         return True
     except Exception as e:

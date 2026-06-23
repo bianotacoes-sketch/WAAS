@@ -180,14 +180,14 @@ def api_carregar_cronograma():
     if 'admin_id' not in session:
         return jsonify({'erro': 'Não autorizado'}), 401
     data_inicio = request.args.get('data_inicio')
-    return jsonify({'cronograma': AdminModel.carregar_cronograma_semanal(data_inicio)})
+    return jsonify({'cronograma': AdminModel.carregar_cronograma_semanal(data_inicio, session['admin_id'])})
 
 @admin_bp.route('/api/salvar_semana', methods=['POST'])
 def api_salvar_semana():
     if 'admin_id' not in session:
         return jsonify({'erro': 'Não autorizado'}), 401
     dados = request.json
-    resultado = AdminModel.salvar_cronograma_semanal(dados.get('data_inicio'), dados.get('config_semana'))
+    resultado = AdminModel.salvar_cronograma_semanal(dados.get('data_inicio'), dados.get('config_semana'), session['admin_id'])
     return jsonify({'sucesso': resultado, 'mensagem': 'Salvo com sucesso!' if resultado else 'Erro ao salvar'})
 
 @admin_bp.route('/api/promocoes', methods=['GET', 'POST'])
@@ -235,8 +235,8 @@ def api_proprietario_empresas():
     if request.method == 'GET':
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT ID, NOME, ENDERECO FROM TESTE.EMPRESA ORDER BY ID")
-        empresas = [{'id': row[0], 'nome': row[1], 'endereco': row[2] or ''} for row in cursor.fetchall()]
+        cursor.execute("SELECT ID, NOME, ENDERECO, SITE_ID FROM TESTE.EMPRESA ORDER BY ID")
+        empresas = [{'id': row[0], 'nome': row[1], 'endereco': row[2] or '', 'site_id': row[3]} for row in cursor.fetchall()]
         conn.close()
         return jsonify({'empresas': empresas})
     
@@ -244,6 +244,15 @@ def api_proprietario_empresas():
         dados = request.json
         nome = dados.get('nome')
         endereco = dados.get('endereco', '')
+        site_id = dados.get('site_id')
+        if site_id:
+            try:
+                site_id = int(site_id)
+            except ValueError:
+                site_id = None
+        else:
+            site_id = None
+            
         if not nome:
             return jsonify({'erro': 'Nome da empresa é obrigatório'}), 400
         
@@ -255,7 +264,7 @@ def api_proprietario_empresas():
             conn.close()
             return jsonify({'erro': 'Já existe uma empresa com este nome'}), 400
         
-        cursor.execute("INSERT INTO TESTE.EMPRESA (NOME, ENDERECO) VALUES (?, ?)", (nome, endereco))
+        cursor.execute("INSERT INTO TESTE.EMPRESA (NOME, ENDERECO, SITE_ID) VALUES (?, ?, ?)", (nome, endereco, site_id))
         conn.commit()
         novo_id = cursor.lastrowid
         conn.close()
@@ -465,13 +474,21 @@ def api_proprietario_atualizar_empresa():
     empresa_id = dados.get('id')
     novo_nome = dados.get('nome')
     novo_endereco = dados.get('endereco', '')
+    novo_site_id = dados.get('site_id')
+    if novo_site_id:
+        try:
+            novo_site_id = int(novo_site_id)
+        except ValueError:
+            novo_site_id = None
+    else:
+        novo_site_id = None
     
     if not empresa_id or not novo_nome:
         return jsonify({'erro': 'ID e novo nome são obrigatórios'}), 400
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE TESTE.EMPRESA SET NOME = ?, ENDERECO = ? WHERE ID = ?", (novo_nome, novo_endereco, empresa_id))
+    cursor.execute("UPDATE TESTE.EMPRESA SET NOME = ?, ENDERECO = ?, SITE_ID = ? WHERE ID = ?", (novo_nome, novo_endereco, novo_site_id, empresa_id))
     conn.commit()
     conn.close()
     return jsonify({'sucesso': True, 'mensagem': 'Empresa atualizada com sucesso!'})
@@ -557,6 +574,7 @@ def api_proprietario_personalizar_cliente():
     else:
         cursor.execute("""
             INSERT INTO TESTE.CLIENTES (USUARIO_ID, NOME_FANTASIA, COR_PRIMARIA, COR_SECUNDARIA, COR_TERCIARIA, LOGO_URL, WHATSAPP_NUMERO, URL_AMIGAVEL)
+            OUTPUT INSERTED.ID
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             usuario_id,
@@ -568,6 +586,12 @@ def api_proprietario_personalizar_cliente():
             dados.get('whatsapp'),
             dados.get('url_amigavel')
         ))
+        novo_cliente_id = cursor.fetchone()[0]
+        cursor.execute("""
+            UPDATE TESTE.USUARIOS
+            SET CLIENTE_ID = ?
+            WHERE ID = ?
+        """, (novo_cliente_id, usuario_id))
         
     conn.commit()
     conn.close()
@@ -1092,12 +1116,12 @@ def api_clientes_agendamentos():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Obter todos os agendamentos a partir de hoje
+        # Obter agendamentos a partir de hoje filtrando pelo usuário logado
         cursor.execute("""
             SELECT DATA, CRONOGRAMA FROM TESTE.AGENDA 
-            WHERE DATA >= CAST(GETDATE() AS DATE)
+            WHERE DATA >= CAST(GETDATE() AS DATE) AND USUARIO_ID = ?
             ORDER BY DATA
-        """)
+        """, (session['admin_id'],))
         
         rows = cursor.fetchall()
         conn.close()
@@ -1150,7 +1174,7 @@ def api_clientes_cancelar():
         cursor = conn.cursor()
         
         # Buscar cronograma
-        cursor.execute("SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ?", (data_ag,))
+        cursor.execute("SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ? AND USUARIO_ID = ?", (data_ag, session['admin_id']))
         row = cursor.fetchone()
         
         if not row or not row[0]:
@@ -1188,8 +1212,8 @@ def api_clientes_cancelar():
         cursor.execute("""
             UPDATE TESTE.AGENDA 
             SET CRONOGRAMA = ?
-            WHERE DATA = ?
-        """, (json.dumps(cronograma), data_ag))
+            WHERE DATA = ? AND USUARIO_ID = ?
+        """, (json.dumps(cronograma), data_ag, session['admin_id']))
         
         conn.commit()
         conn.close()
@@ -1198,3 +1222,75 @@ def api_clientes_cancelar():
     except Exception as e:
         print(f"Erro ao cancelar agendamento pelo admin: {e}")
         return jsonify({'erro': str(e)}), 500
+
+@admin_bp.route('/buffet')
+def buffet():
+    if 'admin_id' not in session:
+        return redirect(url_for('admin.login'))
+        
+    if session.get('site_id') != 5:
+        return redirect(url_for('admin.dashboard'))
+        
+    cliente_id = session.get('cliente_id')
+    cliente_data = AdminModel.buscar_dados_cliente(cliente_id)
+    if not cliente_data:
+        return redirect(url_for('admin.dashboard'))
+        
+    layout_config = merge_layout_config(cliente_data.get('layout_config'))
+    
+    cliente = {
+        'id': cliente_data['id'],
+        'nome_fantasia': cliente_data['nome_fantasia'],
+        'cor_primaria': cliente_data['cor_primaria'],
+        'cor_secundaria': cliente_data['cor_secundaria'],
+        'cor_terciaria': cliente_data['cor_terciaria'],
+        'logo_url': cliente_data['logo_url'],
+        'whatsapp': cliente_data['whatsapp'],
+        'url_amigavel': cliente_data['url_amigavel'],
+        'layout_config': layout_config
+    }
+    
+    # Carregar os serviços do buffet para o formulário
+    empresa_id = session.get('empresa_id', 1)
+    servicos = AdminModel.carregar_servicos(empresa_id, 5)
+    
+    return render_template('admin_buffet.html', 
+                           admin_nome=session['admin_nome'], 
+                           cores=cliente, 
+                           cliente=cliente,
+                           servicos=servicos)
+
+@admin_bp.route('/admin/api/buffet', methods=['GET', 'POST', 'DELETE'])
+def admin_api_buffet():
+    if 'admin_id' not in session:
+        return jsonify({'erro': 'Não autorizado'}), 401
+        
+    empresa_id = session.get('empresa_id', 1)
+    site_id = session.get('site_id', 5)
+    
+    if request.method == 'GET':
+        prazo_filtro = request.args.get('prazo')
+        entregas = AdminModel.listar_entregas(site_id, empresa_id, prazo_filtro)
+        return jsonify({'sucesso': True, 'entregas': entregas})
+        
+    elif request.method == 'POST':
+        dados = request.json
+        nome_cliente = dados.get('nome_cliente')
+        prazo = dados.get('prazo')
+        servico_id = dados.get('servico_id')
+        observacoes = dados.get('observacoes', '')
+        
+        if not all([nome_cliente, prazo, servico_id]):
+            return jsonify({'erro': 'Dados incompletos'}), 400
+            
+        resultado = AdminModel.adicionar_entrega(site_id, empresa_id, nome_cliente, prazo, int(servico_id), observacoes)
+        return jsonify({'sucesso': resultado})
+        
+    elif request.method == 'DELETE':
+        dados = request.json
+        entrega_id = dados.get('id')
+        if not entrega_id:
+            return jsonify({'erro': 'ID não fornecido'}), 400
+            
+        resultado = AdminModel.excluir_entrega(entrega_id)
+        return jsonify({'sucesso': resultado})

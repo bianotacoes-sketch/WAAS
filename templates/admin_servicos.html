@@ -63,8 +63,8 @@
         }
 
         .logo-img {
-            max-height: 40px;
-            max-width: 180px;
+            max-height: 60px;
+            max-width: 250px;
             object-fit: contain;
         }
 
@@ -462,7 +462,11 @@
                 <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
                 <a href="/admin/agenda" class="nav-link"><i class="fa-regular fa-calendar-days"></i> Agenda</a>
                 <a href="/admin/promocoes" class="nav-link"><i class="fa-solid fa-tags"></i> Promoções</a>
+                {% if session.get('site_id') == 5 %}
+                <a href="/admin/buffet" class="nav-link"><i class="fa-solid fa-truck"></i> Organizar Entregas</a>
+                {% else %}
                 <a href="/admin/clientes" class="nav-link"><i class="fa-solid fa-users"></i> Clientes</a>
+                {% endif %}
             </div>
             
             <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
@@ -481,10 +485,12 @@
                     <label>Nome do Serviço</label>
                     <input type="text" id="servicoNome" placeholder="Ex: Corte de Cabelo Masculino">
                 </div>
+                {% if session.get('site_id') != 5 %}
                 <div class="form-group">
                     <label>Duração Estimada (minutos)</label>
                     <input type="number" id="servicoDuracao" placeholder="Ex: 30" min="1">
                 </div>
+                {% endif %}
                 <div class="form-group">
                     <label>Preço Sugerido (R$)</label>
                     <input type="number" id="servicoValor" placeholder="Ex: 50.00" step="0.01" min="0">
@@ -502,10 +508,16 @@
                 <div class="form-group">
                     <label>Categoria de Ícone</label>
                     <select id="servicoIcone" style="width: 100%; padding: 10px 14px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; font-family: inherit;">
+                        {% if session.get('site_id') == 5 %}
+                        <option value="Festa">Festa</option>
+                        <option value="Comida">Comida</option>
+                        <option value="Bolo">Bolo</option>
+                        {% else %}
                         <option value="Rosto">Rosto / Beleza</option>
                         <option value="Mao">Mão / Unha</option>
                         <option value="Corpo">Corpo</option>
                         <option value="Cabelo">Cabelo</option>
+                        {% endif %}
                     </select>
                 </div>
                 <div class="form-group">
@@ -535,10 +547,12 @@
                 <label>Nome do Serviço</label>
                 <input type="text" id="editNome">
             </div>
+            {% if session.get('site_id') != 5 %}
             <div class="form-group" style="margin-bottom: 16px;">
                 <label>Duração (minutos)</label>
                 <input type="number" id="editDuracao" min="1">
             </div>
+            {% endif %}
             <div class="form-group" style="margin-bottom: 16px;">
                 <label>Valor (R$)</label>
                 <input type="number" id="editValor" step="0.01" min="0">
@@ -554,10 +568,16 @@
             <div class="form-group" style="margin-bottom: 16px;">
                 <label>Categoria de Ícone</label>
                 <select id="editIcone" style="width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-family: inherit; font-size: 14px;">
+                    {% if session.get('site_id') == 5 %}
+                    <option value="Festa">Festa</option>
+                    <option value="Comida">Comida</option>
+                    <option value="Bolo">Bolo</option>
+                    {% else %}
                     <option value="Rosto">Rosto / Beleza</option>
                     <option value="Mao">Mão / Unha</option>
                     <option value="Corpo">Corpo</option>
                     <option value="Cabelo">Cabelo</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-group" style="margin-bottom: 24px;">
@@ -574,6 +594,7 @@
     <div id="toast" class="toast-message" style="display: none;"></div>
     
     <script>
+        const siteId = {{ session.get('site_id', 1) }};
         let servicosAtuais = [];
         let editandoId = null;
         
@@ -618,15 +639,15 @@
                 let servicoObj = typeof servico === 'string' ? JSON.parse(servico) : servico;
                 
                 const generoMap = { 'U': 'Unissex', 'F': 'Feminino', 'M': 'Masculino' };
-                const iconeMap = { 'Rosto': 'Rosto / Beleza', 'Mao': 'Mão / Unha', 'Corpo': 'Corpo', 'Cabelo': 'Cabelo' };
+                const iconeMap = { 'Rosto': 'Rosto / Beleza', 'Mao': 'Mão / Unha', 'Corpo': 'Corpo', 'Cabelo': 'Cabelo', 'Festa': 'Festa', 'Comida': 'Comida', 'Bolo': 'Bolo' };
                 const generoText = generoMap[servicoObj.genero] || 'Unissex';
-                const iconeText = iconeMap[servicoObj.icone] || 'Cabelo';
+                const iconeText = iconeMap[servicoObj.icone] || servicoObj.icone || 'Festa';
                 
                 div.innerHTML = `
                     <div class="servico-info">
                         <div class="servico-nome">${servicoObj.nome || 'Sem nome'}</div>
                         <div class="servico-detalhes">
-                            <span><i class="fa-regular fa-clock"></i> ${servicoObj.duracao || 0} min</span>
+                            ${siteId === 5 ? '' : `<span><i class="fa-regular fa-clock"></i> ${servicoObj.duracao || 0} min</span>`}
                             <span>R$ ${(servicoObj.valor || 0).toFixed(2)}</span>
                             <span style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-size: 11px;">Público: ${generoText}</span>
                             <span style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-size: 11px;">Tipo: ${iconeText}</span>
@@ -643,16 +664,19 @@
         
         function adicionarServico() {
             const nome = document.getElementById('servicoNome').value.trim();
-            const duracao = parseInt(document.getElementById('servicoDuracao').value);
+            let duracao = 0;
+            if (siteId !== 5) {
+                const duracaoElem = document.getElementById('servicoDuracao');
+                duracao = duracaoElem ? parseInt(duracaoElem.value) : 0;
+                if (isNaN(duracao) || duracao <= 0) {
+                    mostrarMensagem('Digite uma duração válida', 'erro');
+                    return;
+                }
+            }
             const valor = parseFloat(document.getElementById('servicoValor').value);
             
             if (!nome) {
                 mostrarMensagem('Digite o nome do serviço', 'erro');
-                return;
-            }
-            
-            if (isNaN(duracao) || duracao <= 0) {
-                mostrarMensagem('Digite uma duração válida', 'erro');
                 return;
             }
             
@@ -685,10 +709,11 @@
                 if (data.sucesso) {
                     mostrarMensagem('Serviço adicionado com sucesso!', 'sucesso');
                     document.getElementById('servicoNome').value = '';
-                    document.getElementById('servicoDuracao').value = '';
+                    const duracaoElem = document.getElementById('servicoDuracao');
+                    if (duracaoElem) duracaoElem.value = '';
                     document.getElementById('servicoValor').value = '';
                     document.getElementById('servicoGenero').value = 'U';
-                    document.getElementById('servicoIcone').value = 'Rosto';
+                    document.getElementById('servicoIcone').value = siteId === 5 ? 'Festa' : 'Rosto';
                     document.getElementById('servicoDescricao').value = '';
                     carregarServicos();
                 } else {
@@ -706,10 +731,11 @@
             
             editandoId = index;
             document.getElementById('editNome').value = servicoObj.nome || '';
-            document.getElementById('editDuracao').value = servicoObj.duracao || 0;
+            const duracaoElem = document.getElementById('editDuracao');
+            if (duracaoElem) duracaoElem.value = servicoObj.duracao || 0;
             document.getElementById('editValor').value = servicoObj.valor || 0;
             document.getElementById('editGenero').value = servicoObj.genero || 'U';
-            document.getElementById('editIcone').value = servicoObj.icone || 'Rosto';
+            document.getElementById('editIcone').value = servicoObj.icone || (siteId === 5 ? 'Festa' : 'Rosto');
             document.getElementById('editDescricao').value = servicoObj.descricao || '';
             
             document.getElementById('editModal').style.display = 'flex';
@@ -717,7 +743,15 @@
         
         function salvarEdicao() {
             const nome = document.getElementById('editNome').value.trim();
-            const duracao = parseInt(document.getElementById('editDuracao').value);
+            let duracao = 0;
+            if (siteId !== 5) {
+                const duracaoElem = document.getElementById('editDuracao');
+                duracao = duracaoElem ? parseInt(duracaoElem.value) : 0;
+                if (isNaN(duracao) || duracao <= 0) {
+                    mostrarMensagem('O tempo de duração é obrigatório', 'erro');
+                    return;
+                }
+            }
             const valor = parseFloat(document.getElementById('editValor').value);
             
             if (!nome) {

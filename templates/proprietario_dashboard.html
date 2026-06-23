@@ -590,9 +590,17 @@
         <div id="tab-empresas" class="tab-content">
             <div class="card">
                 <div class="card-title"><i class="fa-solid fa-building"></i> Cadastrar Nova Empresa</div>
-                <div class="form-group">
-                    <label>Nome / Razão Social</label>
-                    <input type="text" id="empresaNome" placeholder="Ex: Salão Estilo & Cia Ltda">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome / Razão Social</label>
+                        <input type="text" id="empresaNome" placeholder="Ex: Salão Estilo & Cia Ltda">
+                    </div>
+                    <div class="form-group">
+                        <label>Vincular ao Site</label>
+                        <select id="empresaSite">
+                            <option value="">Selecione um site</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group" style="margin-top: 15px; margin-bottom: 15px;">
                     <label>Endereço</label>
@@ -616,17 +624,9 @@
         <div id="tab-sites" class="tab-content">
             <div class="card">
                 <div class="card-title"><i class="fa-solid fa-globe"></i> Cadastrar Novo Site / Serviço</div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nome Identificador do Site</label>
-                        <input type="text" id="siteNome" placeholder="Ex: Site Principal Barbearia">
-                    </div>
-                    <div class="form-group">
-                        <label>Vincular à Empresa</label>
-                        <select id="siteEmpresa">
-                            <option value="">Selecione uma empresa</option>
-                        </select>
-                    </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Nome Identificador do Site</label>
+                    <input type="text" id="siteNome" placeholder="Ex: Site Principal Barbearia">
                 </div>
                 <button class="btn btn-success" onclick="adicionarSite()"><i class="fa-solid fa-plus"></i> Criar Site</button>
             </div>
@@ -975,12 +975,13 @@
             } else if (tab === 'empresas') {
                 document.querySelectorAll('.tab-btn')[1].classList.add('active');
                 document.getElementById('tab-empresas').classList.add('active');
+                carregarSites();
                 carregarEmpresas();
+                carregarSitesParaSelectEmpresa();
             } else if (tab === 'sites') {
                 document.querySelectorAll('.tab-btn')[2].classList.add('active');
                 document.getElementById('tab-sites').classList.add('active');
                 carregarSites();
-                carregarEmpresasParaSelectSite();
             } else if (tab === 'clientes') {
                 document.querySelectorAll('.tab-btn')[3].classList.add('active');
                 document.getElementById('tab-clientes').classList.add('active');
@@ -1012,12 +1013,13 @@
             
             container.innerHTML = '';
             empresas.forEach(empresa => {
+                const site = sites.find(s => s.id === empresa.site_id);
                 const div = document.createElement('div');
                 div.className = 'item-card';
                 div.innerHTML = `
                     <div class="item-info">
                         <div class="item-nome"><i class="fa-solid fa-building"></i> ${empresa.nome}</div>
-                        <div class="item-detalhes">Código Identificador: ${empresa.id}</div>
+                        <div class="item-detalhes">Código Identificador: ${empresa.id} | Site Vinculado: ${site ? site.nome : 'Nenhum site'}</div>
                     </div>
                     <div class="item-actions">
                         <button class="btn btn-warning btn-pequeno" onclick="abrirEdicaoEmpresa(${empresa.id})"><i class="fa-solid fa-pencil"></i> Editar</button>
@@ -1031,6 +1033,7 @@
         function adicionarEmpresa() {
             const nome = document.getElementById('empresaNome').value.trim();
             const endereco = document.getElementById('empresaEndereco').value.trim();
+            const site_id = document.getElementById('empresaSite').value;
             if (!nome) {
                 mostrarMensagem('Digite o nome da empresa', 'erro');
                 return;
@@ -1039,7 +1042,7 @@
             fetch('/admin/api/proprietario/empresas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome: nome, endereco: endereco })
+                body: JSON.stringify({ nome: nome, endereco: endereco, site_id: site_id ? parseInt(site_id) : null })
             })
             .then(response => response.json())
             .then(data => {
@@ -1047,9 +1050,9 @@
                     mostrarMensagem('Empresa criada com sucesso!', 'sucesso');
                     document.getElementById('empresaNome').value = '';
                     document.getElementById('empresaEndereco').value = '';
+                    document.getElementById('empresaSite').value = '';
                     carregarEmpresas();
                     carregarEmpresasParaSelect();
-                    carregarEmpresasParaSelectSite();
                 } else {
                     mostrarMensagem(data.erro || 'Erro ao criar empresa', 'erro');
                 }
@@ -1065,7 +1068,14 @@
             document.getElementById('modalBody').innerHTML = `
                 <div class="form-group">
                     <label>Nome / Razão Social</label>
-                    <input type="text" id="editValor" value="${empresa.nome}">
+                    <input type="text" id="editValor" value="${empresa.nome.replace(/"/g, '&quot;')}">
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Vincular ao Site</label>
+                    <select id="editSiteLink">
+                        <option value="">Selecione um site</option>
+                        ${sites.map(s => `<option value="${s.id}" ${empresa.site_id === s.id ? 'selected' : ''}>${s.nome}</option>`).join('')}
+                    </select>
                 </div>
                 <div class="form-group" style="margin-top: 15px;">
                     <label>Endereço</label>
@@ -1084,7 +1094,6 @@
                             mostrarMensagem('Empresa excluída com sucesso!', 'sucesso');
                             carregarEmpresas();
                             carregarEmpresasParaSelect();
-                            carregarEmpresasParaSelectSite();
                         } else {
                             mostrarMensagem(data.erro || 'Erro ao excluir.', 'erro');
                         }
@@ -1104,15 +1113,17 @@
                 });
         }
         
-        function carregarEmpresasParaSelectSite() {
-            fetch('/admin/api/proprietario/empresas')
+        function carregarSitesParaSelectEmpresa() {
+            fetch('/admin/api/proprietario/sites')
                 .then(response => response.json())
                 .then(data => {
-                    const select = document.getElementById('siteEmpresa');
-                    select.innerHTML = '<option value="">Selecione uma empresa</option>';
-                    (data.empresas || []).forEach(emp => {
-                        select.innerHTML += `<option value="${emp.id}">${emp.nome}</option>`;
-                    });
+                    const select = document.getElementById('empresaSite');
+                    if (select) {
+                        select.innerHTML = '<option value="">Selecione um site</option>';
+                        (data.sites || []).forEach(site => {
+                            select.innerHTML += `<option value="${site.id}">${site.nome}</option>`;
+                        });
+                    }
                 });
         }
         
@@ -1136,13 +1147,12 @@
             
             container.innerHTML = '';
             sites.forEach(site => {
-                const empresa = empresas.find(e => e.id === site.empresa_id);
                 const div = document.createElement('div');
                 div.className = 'item-card';
                 div.innerHTML = `
                     <div class="item-info">
                         <div class="item-nome"><i class="fa-solid fa-globe"></i> ${site.nome}</div>
-                        <div class="item-detalhes">Código Identificador: ${site.id} | Empresa Vinculada: ${empresa ? empresa.nome : 'Nenhum vínculo'}</div>
+                        <div class="item-detalhes">Código Identificador: ${site.id}</div>
                     </div>
                     <div class="item-actions">
                         <button class="btn btn-warning btn-pequeno" onclick="abrirEdicaoSite(${site.id}, '${site.nome.replace(/'/g, "\\'")}')"><i class="fa-solid fa-pencil"></i> Editar</button>
@@ -1155,28 +1165,22 @@
         
         function adicionarSite() {
             const nome = document.getElementById('siteNome').value.trim();
-            const empresa_id = document.getElementById('siteEmpresa').value;
             
             if (!nome) {
                 mostrarMensagem('Digite o nome do site', 'erro');
-                return;
-            }
-            if (!empresa_id) {
-                mostrarMensagem('Selecione uma empresa vinculada', 'erro');
                 return;
             }
             
             fetch('/admin/api/proprietario/sites', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome: nome, empresa_id: parseInt(empresa_id) })
+                body: JSON.stringify({ nome: nome })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.sucesso) {
                     mostrarMensagem('Site criado com sucesso!', 'sucesso');
                     document.getElementById('siteNome').value = '';
-                    document.getElementById('siteEmpresa').value = '';
                     carregarSites();
                     carregarSitesParaSelect();
                 } else {
@@ -1625,6 +1629,7 @@
             if (editandoTipo === 'empresa') {
                 const novoNome = document.getElementById('editValor').value.trim();
                 const novoEndereco = document.getElementById('editEndereco').value.trim();
+                const siteId = document.getElementById('editSiteLink').value;
                 if (!novoNome) {
                     mostrarMensagem('O nome da empresa é obrigatório.', 'erro');
                     return;
@@ -1632,16 +1637,15 @@
                 fetch('/admin/api/proprietario/empresa/atualizar', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: editandoId, nome: novoNome, endereco: novoEndereco })
+                    body: JSON.stringify({ id: editandoId, nome: novoNome, endereco: novoEndereco, site_id: siteId ? parseInt(siteId) : null })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.sucesso) {
-                        mostrarMensagem('Empresa updated!', 'sucesso');
+                        mostrarMensagem('Empresa atualizada!', 'sucesso');
                         fecharModal();
                         carregarEmpresas();
                         carregarEmpresasParaSelect();
-                        carregarEmpresasParaSelectSite();
                     } else {
                         mostrarMensagem(data.erro || 'Erro ao atualizar.', 'erro');
                     }
@@ -1723,8 +1727,8 @@
         carregarSites();
         carregarUsuarios();
         carregarEmpresasParaSelect();
-        carregarEmpresasParaSelectSite();
         carregarSitesParaSelect();
+        carregarSitesParaSelectEmpresa();
         carregarClientes();
         carregarUsuariosParaSelectPermissao();
     </script>

@@ -61,8 +61,8 @@
         }
 
         .logo-img {
-            max-height: 40px;
-            max-width: 180px;
+            max-height: 60px;
+            max-width: 250px;
             object-fit: contain;
         }
 
@@ -531,7 +531,7 @@
         }
 
         .mockup-logo-img {
-            max-height: 14px;
+            max-height: 24px;
         }
 
         .mockup-nav-links {
@@ -814,7 +814,11 @@
                 <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
                 <a href="/admin/agenda" class="nav-link"><i class="fa-regular fa-calendar-days"></i> Agenda</a>
                 <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-scissors"></i> Serviços</a>
+                {% if session.get('site_id') == 5 %}
+                <a href="/admin/buffet" class="nav-link"><i class="fa-solid fa-truck"></i> Organizar Entregas</a>
+                {% else %}
                 <a href="/admin/clientes" class="nav-link"><i class="fa-solid fa-users"></i> Clientes</a>
+                {% endif %}
                 {% endif %}
             </div>
             
@@ -1211,7 +1215,7 @@
                                     </button>
                                 </div>
                                 <div id="logo-preview-container" style="margin-top: 10px; display: none;">
-                                    <img id="logo-preview-img" src="" alt="Previa da Logo" style="max-height: 50px; border-radius: 4px; border: 1px solid var(--borders); padding: 4px; background: rgba(255,255,255,0.05);">
+                                     <img id="logo-preview-img" src="" alt="Previa da Logo" style="max-height: 80px; border-radius: 4px; border: 1px solid var(--borders); padding: 4px; background: rgba(255,255,255,0.05);">
                                 </div>
                                 <span style="font-size: 11px; color: var(--text-muted);">A imagem terá seu fundo branco removido automaticamente.</span>
                             </div>

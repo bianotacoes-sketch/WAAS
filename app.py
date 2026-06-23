@@ -101,6 +101,27 @@ SUSPENSION_TEMPLATE = """
 """
 
 
+def obter_usuario_id_atual():
+    cliente_atual = session.get('cliente_atual')
+    if not cliente_atual:
+        empresa_id, site_id = 1, 1
+    else:
+        empresa_id = cliente_atual.get('empresa_id', 1)
+        site_id = cliente_atual.get('site_id', 1)
+        
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID FROM TESTE.USUARIOS WHERE EMPRESA_ID = ? AND SITE_ID = ? ORDER BY ID", (empresa_id, site_id))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return row[0]
+        return 3
+    except Exception as e:
+        print(f"Erro ao obter_usuario_id_atual: {e}")
+        return 3
+
 app = Flask(__name__)
 
 # Configurações de segurança
@@ -225,10 +246,11 @@ def api_horarios_disponiveis():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Buscar cronograma para a data
+        # Buscar cronograma para a data e o usuário atual
+        usuario_id = obter_usuario_id_atual()
         cursor.execute("""
-            SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ?
-        """, (data_str,))
+            SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ? AND USUARIO_ID = ?
+        """, (data_str, usuario_id))
         
         resultado = cursor.fetchone()
         conn.close()
@@ -273,9 +295,10 @@ def api_agendar():
         cursor = conn.cursor()
         
         # Buscar o cronograma atual
+        usuario_id = obter_usuario_id_atual()
         cursor.execute("""
-            SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ?
-        """, (data_agendamento,))
+            SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ? AND USUARIO_ID = ?
+        """, (data_agendamento, usuario_id))
         
         resultado = cursor.fetchone()
         
@@ -308,8 +331,8 @@ def api_agendar():
         cursor.execute("""
             UPDATE TESTE.AGENDA 
             SET CRONOGRAMA = ?
-            WHERE DATA = ?
-        """, (cronograma_json, data_agendamento))
+            WHERE DATA = ? AND USUARIO_ID = ?
+        """, (cronograma_json, data_agendamento, usuario_id))
         
         conn.commit()
         conn.close()
@@ -571,7 +594,7 @@ def admin_cliente_url(url_cliente):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT U.ID, U.NOME, U.EMAIL, U.TIPO, U.SENHA, U.EMPRESA_ID, U.SITE_ID, U.CLIENTE_ID,
+        SELECT U.ID, U.NOME, U.EMAIL, U.TIPO, U.SENHA, U.EMPRESA_ID, U.SITE_ID, C.ID,
                C.NOME_FANTASIA, C.COR_PRIMARIA, C.COR_SECUNDARIA, C.COR_TERCIARIA, C.LOGO_URL, 
                C.WHATSAPP_NUMERO, C.URL_AMIGAVEL, U.ATIVO
         FROM TESTE.CLIENTES C
@@ -621,12 +644,13 @@ def api_buscar_agendamentos_cliente():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Buscar cronogramas de hoje para frente
+        # Buscar cronogramas de hoje para frente filtrando pelo usuário atual
+        usuario_id = obter_usuario_id_atual()
         cursor.execute("""
             SELECT DATA, CRONOGRAMA FROM TESTE.AGENDA 
-            WHERE DATA >= CAST(GETDATE() AS DATE)
+            WHERE DATA >= CAST(GETDATE() AS DATE) AND USUARIO_ID = ?
             ORDER BY DATA
-        """)
+        """, (usuario_id,))
         
         rows = cursor.fetchall()
         conn.close()
@@ -674,7 +698,8 @@ def api_desmarcar_agendamento_cliente():
         cursor = conn.cursor()
         
         # Buscar cronograma
-        cursor.execute("SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ?", (data_ag,))
+        usuario_id = obter_usuario_id_atual()
+        cursor.execute("SELECT CRONOGRAMA FROM TESTE.AGENDA WHERE DATA = ? AND USUARIO_ID = ?", (data_ag, usuario_id))
         row = cursor.fetchone()
         
         if not row or not row[0]:
@@ -712,8 +737,8 @@ def api_desmarcar_agendamento_cliente():
         cursor.execute("""
             UPDATE TESTE.AGENDA 
             SET CRONOGRAMA = ?
-            WHERE DATA = ?
-        """, (json.dumps(cronograma), data_ag))
+            WHERE DATA = ? AND USUARIO_ID = ?
+        """, (json.dumps(cronograma), data_ag, usuario_id))
         
         conn.commit()
         conn.close()
