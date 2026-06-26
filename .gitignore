@@ -4,3 +4,4 @@ flask_session/
 *.pyo
 *.pyd
 .DS_Store
+scratch/

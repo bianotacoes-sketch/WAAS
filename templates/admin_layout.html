@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% if session.get('site_id') == 5 %}🎂{% elif session.get('site_id') == 4 %}🏠{% else %}✂️{% endif %}</text></svg>">
     <title>Aparência do Site | {{ cliente.nome_fantasia }}</title>
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -799,7 +800,13 @@
         <div class="brand">
             <img src="{{ cliente.logo_url or '' }}" class="logo-img" alt="Logo" id="headerLogo" style="{% if not cliente.logo_url %}display: none;{% endif %}">
             <div class="logo-text" id="headerLogoTextWrapper" style="{% if cliente.logo_url %}display: none;{% endif %}">
-                <i class="fa-solid fa-scissors" id="headerLogoIcon"></i>
+                {% if session.get('site_id') == 5 %}
+                    <i class="fa-solid fa-cake-candles" id="headerLogoIcon"></i>
+                {% elif session.get('site_id') == 4 %}
+                    <i class="fa-solid fa-house" id="headerLogoIcon"></i>
+                {% else %}
+                    <i class="fa-solid fa-scissors" id="headerLogoIcon"></i>
+                {% endif %}
                 <span id="headerLogoText">{{ cliente.nome_fantasia }}</span>
             </div>
         </div>
@@ -813,7 +820,11 @@
                 {% else %}
                 <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
                 <a href="/admin/agenda" class="nav-link"><i class="fa-regular fa-calendar-days"></i> Agenda</a>
+                {% if session.get('site_id') == 5 %}
+                <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-cake-candles"></i> Serviços</a>
+                {% else %}
                 <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-scissors"></i> Serviços</a>
+                {% endif %}
                 {% if session.get('site_id') == 5 %}
                 <a href="/admin/buffet" class="nav-link"><i class="fa-solid fa-truck"></i> Organizar Entregas</a>
                 {% else %}
@@ -1195,7 +1206,7 @@
                             </div>
                             <div class="form-group">
                                 <label>URL Amigável (Slug)</label>
-                                <input type="text" id="edit-url-amigavel" oninput="updateCoreField('url_amigavel', this.value)" placeholder="ex: meu-salao">
+                                <input type="text" id="edit-url-amigavel" oninput="updateCoreField('url_amigavel', this.value)" placeholder="{% if session.get('site_id') == 5 %}ex: meu-buffet{% elif session.get('site_id') == 4 %}ex: minha-imobiliaria{% else %}ex: meu-salao{% endif %}">
                             </div>
                         </div>
                         <div class="form-row">
@@ -1244,7 +1255,13 @@
                         <!-- Navigation Bar -->
                         <nav class="mockup-nav" id="mockNav">
                             <div class="mockup-logo" id="mockLogo">
-                                <i class="fa-solid fa-scissors" id="mockLogoIcon"></i>
+                                {% if session.get('site_id') == 5 %}
+                                    <i class="fa-solid fa-cake-candles" id="mockLogoIcon"></i>
+                                {% elif session.get('site_id') == 4 %}
+                                    <i class="fa-solid fa-house" id="mockLogoIcon"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-scissors" id="mockLogoIcon"></i>
+                                {% endif %}
                                 <span id="mockLogoText">Marcus Teste</span>
                             </div>
                             <div class="mockup-nav-links">
@@ -1271,7 +1288,13 @@
                             </div>
                             <div class="mockup-service-card" id="mockServiceCard">
                                 <div class="mockup-icon-box" id="mockIconBox">
-                                    <i class="fa-solid fa-scissors"></i>
+                                    {% if session.get('site_id') == 5 %}
+                                        <i class="fa-solid fa-cake-candles"></i>
+                                    {% elif session.get('site_id') == 4 %}
+                                        <i class="fa-solid fa-house"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-scissors"></i>
+                                    {% endif %}
                                 </div>
                                 <div>
                                     <div class="mockup-service-title">Corte de Cabelo Premium</div>
@@ -1852,7 +1875,52 @@
             if (logoUrl) {
                 logoContainer.innerHTML = `<img src="${logoUrl}" class="mockup-logo-img" alt="Logo">`;
             } else {
-                logoContainer.innerHTML = `<i class="fa-solid fa-scissors" style="color: var(--mockup-primary); margin-right: 4px;"></i> <span>${nome}</span>`;
+                let defaultIcon = 'fa-scissors';
+                if (clientData.site_id === 5) {
+                    defaultIcon = 'fa-cake-candles';
+                } else if (clientData.site_id === 4) {
+                    defaultIcon = 'fa-house';
+                }
+                logoContainer.innerHTML = `<i class="fa-solid ${defaultIcon}" style="color: var(--mockup-primary); margin-right: 4px;"></i> <span>${nome}</span>`;
+            }
+
+            // Update mockup service card content based on site_id
+            const mockIconBox = document.getElementById('mockIconBox');
+            const mockServiceTitle = document.querySelector('.mockup-service-title');
+            const mockServiceDesc = document.querySelector('.mockup-service-desc');
+            const mockServicePrice = document.querySelector('.mockup-service-price');
+            const mockHeroTitle = document.getElementById('mockHeroTitle');
+            const mockHeroSubtitle = document.getElementById('mockHeroSubtitle');
+            const mockSectionHeaderH2 = document.querySelector('.mockup-section-header h2');
+            const mockSectionHeaderP = document.querySelector('.mockup-section-header p');
+
+            if (clientData.site_id === 5) {
+                if (mockIconBox) mockIconBox.innerHTML = `<i class="fa-solid fa-cake-candles"></i>`;
+                if (mockServiceTitle) mockServiceTitle.textContent = `Buffet Completo Infantil`;
+                if (mockServiceDesc) mockServiceDesc.textContent = `Comida, decoração, brinquedos e bolo inclusos`;
+                if (mockServicePrice) mockServicePrice.textContent = `Sob Consulta`;
+                if (mockHeroTitle) mockHeroTitle.innerHTML = `Celebre seus Melhores Momentos no <br><span class="highlight" id="mockHeroHighlight">${nome}</span>`;
+                if (mockHeroSubtitle) mockHeroSubtitle.textContent = `O buffet perfeito para sua festa. Comida deliciosa, decoração completa e momentos inesquecíveis.`;
+                if (mockSectionHeaderH2) mockSectionHeaderH2.textContent = `Nossos Serviços e Pacotes`;
+                if (mockSectionHeaderP) mockSectionHeaderP.textContent = `Confira nossos pacotes de buffet e serviços`;
+            } else if (clientData.site_id === 4) {
+                if (mockIconBox) mockIconBox.innerHTML = `<i class="fa-solid fa-house"></i>`;
+                if (mockServiceTitle) mockServiceTitle.textContent = `Consultoria Imobiliária`;
+                if (mockServiceDesc) mockServiceDesc.textContent = `Compra, venda e avaliação de imóveis`;
+                if (mockServicePrice) mockServicePrice.textContent = `Sob Consulta`;
+                if (mockHeroTitle) mockHeroTitle.innerHTML = `Encontre seu Lar no <br><span class="highlight" id="mockHeroHighlight">${nome}</span>`;
+                if (mockHeroSubtitle) mockHeroSubtitle.textContent = `Os melhores imóveis, atendimento personalizado e assessoria completa para realizar o seu sonho.`;
+                if (mockSectionHeaderH2) mockSectionHeaderH2.textContent = `Serviços Disponíveis`;
+                if (mockSectionHeaderP) mockSectionHeaderP.textContent = `Confira nossas opções e ofertas exclusivas`;
+            } else {
+                if (mockIconBox) mockIconBox.innerHTML = `<i class="fa-solid fa-scissors"></i>`;
+                if (mockServiceTitle) mockServiceTitle.textContent = `Corte de Cabelo Premium`;
+                if (mockServiceDesc) mockServiceDesc.textContent = `Lavagem, corte moderno e finalização`;
+                if (mockServicePrice) mockServicePrice.textContent = `R$ 50`;
+                if (mockHeroTitle) mockHeroTitle.innerHTML = `Transforme seu Visual no <br><span class="highlight" id="mockHeroHighlight">${nome}</span>`;
+                if (mockHeroSubtitle) mockHeroSubtitle.textContent = `Profissionais experientes, ambiente moderno e serviços de alta qualidade para elevar sua autoestima.`;
+                if (mockSectionHeaderH2) mockSectionHeaderH2.textContent = `Nossos Serviços`;
+                if (mockSectionHeaderP) mockSectionHeaderP.textContent = `Confira nossa gama completa de soluções estéticas`;
             }
 
             // Alinhamento Hero

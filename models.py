@@ -58,7 +58,7 @@ class AdminModel:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT NOME_DASHBOARD, CONFIGURAR_AGENDA, GERENCIAR_SERVICO, PROMOCOES, GERENCIAR_CLIENTES, PERSONALIZAR_APARENCIA,
-                   GERENCIAR_OFERTAS, IMAGENS_SERVICOS
+                   GERENCIAR_OFERTAS, IMAGENS_SERVICOS, CARROSSEL_IMAGENS
             FROM TESTE.USUARIOS 
             WHERE ID = ?
         """, (usuario_id,))
@@ -75,7 +75,8 @@ class AdminModel:
                 'gerenciar_clientes': json.loads(permissoes[4]) if permissoes[4] else {},
                 'personalizar_aparencia': json.loads(permissoes[5]) if len(permissoes) > 5 and permissoes[5] else {},
                 'gerenciar_ofertas': json.loads(permissoes[6]) if len(permissoes) > 6 and permissoes[6] else {},
-                'imagens_servicos': json.loads(permissoes[7]) if len(permissoes) > 7 and permissoes[7] else {}
+                'imagens_servicos': json.loads(permissoes[7]) if len(permissoes) > 7 and permissoes[7] else {},
+                'carrossel_imagens': json.loads(permissoes[8]) if len(permissoes) > 8 and permissoes[8] else {}
             }
         return {
             'nome_dashboard': {},
@@ -85,7 +86,8 @@ class AdminModel:
             'gerenciar_clientes': {},
             'personalizar_aparencia': {},
             'gerenciar_ofertas': {},
-            'imagens_servicos': {}
+            'imagens_servicos': {},
+            'carrossel_imagens': {}
         }
     
     @staticmethod
@@ -106,7 +108,8 @@ class AdminModel:
                     GERENCIAR_CLIENTES = ?,
                     PERSONALIZAR_APARENCIA = ?,
                     GERENCIAR_OFERTAS = ?,
-                    IMAGENS_SERVICOS = ?
+                    IMAGENS_SERVICOS = ?,
+                    CARROSSEL_IMAGENS = ?
                 WHERE ID = ?
             """, (
                 json.dumps(permissoes.get('nome_dashboard', {})),
@@ -117,6 +120,7 @@ class AdminModel:
                 json.dumps(permissoes.get('personalizar_aparencia', {})),
                 json.dumps(permissoes.get('gerenciar_ofertas', {})),
                 json.dumps(permissoes.get('imagens_servicos', {})),
+                json.dumps(permissoes.get('carrossel_imagens', {})),
                 usuario_id
             ))
             conn.commit()
@@ -136,10 +140,12 @@ class AdminModel:
         
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT ID, NOME_FANTASIA, URL_AMIGAVEL, COR_PRIMARIA, COR_SECUNDARIA, 
-                   COR_TERCIARIA, LOGO_URL, WHATSAPP_NUMERO, ATIVO, LAYOUT_CONFIG
-            FROM TESTE.CLIENTES 
-            WHERE ID = ?
+            SELECT C.ID, C.NOME_FANTASIA, C.URL_AMIGAVEL, C.COR_PRIMARIA, C.COR_SECUNDARIA, 
+                   C.COR_TERCIARIA, C.LOGO_URL, C.WHATSAPP_NUMERO, C.ATIVO, C.LAYOUT_CONFIG, C.USUARIO_ID,
+                   U.SITE_ID
+            FROM TESTE.CLIENTES C
+            LEFT JOIN TESTE.USUARIOS U ON C.USUARIO_ID = U.ID
+            WHERE C.ID = ?
         """, (cliente_id,))
         
         cliente = cursor.fetchone()
@@ -156,7 +162,9 @@ class AdminModel:
                 'logo_url': cliente[6],
                 'whatsapp': cliente[7],
                 'ativo': cliente[8],
-                'layout_config': cliente[9] if len(cliente) > 9 else None
+                'layout_config': cliente[9] if len(cliente) > 9 else None,
+                'usuario_id': cliente[10] if len(cliente) > 10 else None,
+                'site_id': cliente[11] if len(cliente) > 11 else None
             }
         return None
     
@@ -1034,3 +1042,106 @@ class AdminModel:
             print(f"Erro ao buscar ids do usuario por cliente: {e}")
             if 'conn' in locals(): conn.close()
             return None, None
+
+    @staticmethod
+    def salvar_imagens_carrossel(empresa_id, site_id, imagens_binarias):
+        conn = get_db_connection()
+        if not conn: return False
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM teste.carrossel WHERE empresa_id = ? AND site_id = ?", (empresa_id, site_id))
+            existe = cursor.fetchone()
+            
+            # Limit to 10 images total
+            imagens_binarias = imagens_binarias[:10]
+            
+            if len(imagens_binarias) > 0:
+                if not existe:
+                    colunas = [f"imagem{i+1}" for i in range(len(imagens_binarias))]
+                    cols_str = ", ".join(colunas)
+                    vals_str = ", ".join(["?" for _ in colunas])
+                    params = [empresa_id, site_id] + imagens_binarias
+                    cursor.execute(f"INSERT INTO teste.carrossel (empresa_id, site_id, {cols_str}) VALUES (?, ?, {vals_str})", params)
+                else:
+                    # Encontrar quais colunas estão vazias (NULL)
+                    cols_check = ", ".join([f"CASE WHEN imagem{i} IS NULL THEN 1 ELSE 0 END" for i in range(1, 11)])
+                    cursor.execute(f"SELECT {cols_check} FROM teste.carrossel WHERE empresa_id = ? AND site_id = ?", (empresa_id, site_id))
+                    null_row = cursor.fetchone()
+                    
+                    if null_row:
+                        null_indices = [idx + 1 for idx, is_null in enumerate(null_row) if is_null == 1]
+                        
+                        updates = []
+                        params = []
+                        for idx, img_bin in enumerate(imagens_binarias):
+                            if idx < len(null_indices):
+                                target_col = f"imagem{null_indices[idx]}"
+                                updates.append(f"{target_col} = ?")
+                                params.append(img_bin)
+                        
+                        if updates:
+                            params.extend([empresa_id, site_id])
+                            set_clause = ", ".join(updates)
+                            cursor.execute(f"UPDATE teste.carrossel SET {set_clause} WHERE empresa_id = ? AND site_id = ?", params)
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar imagens carrossel: {e}")
+            if 'conn' in locals(): conn.close()
+            return False
+
+    @staticmethod
+    def listar_id_imagens_carrossel(empresa_id, site_id):
+        conn = get_db_connection()
+        if not conn: return []
+        try:
+            cursor = conn.cursor()
+            cols = ", ".join([f"CASE WHEN imagem{i} IS NOT NULL THEN 1 ELSE 0 END" for i in range(1, 11)])
+            cursor.execute(f"SELECT {cols} FROM teste.carrossel WHERE empresa_id = ? AND site_id = ?", (empresa_id, site_id))
+            row = cursor.fetchone()
+            conn.close()
+            if not row: return []
+            
+            indices = []
+            for idx, has_img in enumerate(row):
+                if has_img == 1:
+                    indices.append(idx + 1)
+            return indices
+        except Exception as e:
+            print(f"Erro ao listar imagens carrossel: {e}")
+            if 'conn' in locals(): conn.close()
+            return []
+
+    @staticmethod
+    def buscar_imagem_carrossel(empresa_id, site_id, indice_imagem):
+        if indice_imagem < 1 or indice_imagem > 10: return None
+        conn = get_db_connection()
+        if not conn: return None
+        try:
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT imagem{indice_imagem} FROM teste.carrossel WHERE empresa_id = ? AND site_id = ?", (empresa_id, site_id))
+            row = cursor.fetchone()
+            conn.close()
+            return row[0] if row else None
+        except Exception as e:
+            print(f"Erro ao buscar imagem carrossel: {e}")
+            if 'conn' in locals(): conn.close()
+            return None
+
+    @staticmethod
+    def excluir_imagem_carrossel(empresa_id, site_id, indice_imagem):
+        if indice_imagem < 1 or indice_imagem > 10: return False
+        conn = get_db_connection()
+        if not conn: return False
+        try:
+            cursor = conn.cursor()
+            cursor.execute(f"UPDATE teste.carrossel SET imagem{indice_imagem} = NULL WHERE empresa_id = ? AND site_id = ?", (empresa_id, site_id))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Erro ao excluir imagem carrossel: {e}")
+            if 'conn' in locals(): conn.close()
+            return False

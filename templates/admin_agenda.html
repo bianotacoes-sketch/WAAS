@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% if session.get('site_id') == 5 %}🎂{% elif session.get('site_id') == 4 %}🏠{% else %}✂️{% endif %}</text></svg>">
     <title>Configurar Agenda | {{ cliente.nome_fantasia }}</title>
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -783,7 +784,13 @@
                 <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
             {% else %}
                 <div class="logo-text">
-                    <i class="fa-solid fa-scissors"></i>
+                    {% if session.get('site_id') == 5 %}
+                        <i class="fa-solid fa-cake-candles"></i>
+                    {% elif session.get('site_id') == 4 %}
+                        <i class="fa-solid fa-house"></i>
+                    {% else %}
+                        <i class="fa-solid fa-scissors"></i>
+                    {% endif %}
                     <span>{{ cliente.nome_fantasia }}</span>
                 </div>
             {% endif %}
@@ -794,7 +801,11 @@
             
             <div class="nav-links">
                 <a href="/admin/dashboard" class="nav-link"><i class="fa-solid fa-house"></i> Menu Principal</a>
+                {% if session.get('site_id') == 5 %}
+                <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-cake-candles"></i> Serviços</a>
+                {% else %}
                 <a href="/admin/servicos" class="nav-link"><i class="fa-solid fa-scissors"></i> Serviços</a>
+                {% endif %}
                 <a href="/admin/promocoes" class="nav-link"><i class="fa-solid fa-tags"></i> Promoções</a>
                 {% if session.get('site_id') == 5 %}
                 <a href="/admin/buffet" class="nav-link"><i class="fa-solid fa-truck"></i> Organizar Entregas</a>

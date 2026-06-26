@@ -925,6 +925,29 @@
                         </div>
                     </div>
                     
+                    <!-- Card Carrossel de Imagens (Todos os Sites) -->
+                    <div class="card" id="cardPermCarrosselImagens" style="border-left: 4px solid var(--primary);">
+                        <h4><i class="fa-solid fa-images"></i> Módulo Carrossel de Imagens</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do Módulo</label>
+                                <input type="text" id="permCarrosselImagensTitulo" placeholder="Carrossel de Imagens">
+                            </div>
+                            <div class="form-group">
+                                <label>Ícone (FontAwesome Class)</label>
+                                <input type="text" id="permCarrosselImagensIcone" placeholder="fa-images">
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição Curta</label>
+                                <input type="text" id="permCarrosselImagensDescricao" placeholder="Gerencie imagens que aparecem no topo do seu site.">
+                            </div>
+                            <div class="form-group form-group-checkbox">
+                                <input type="checkbox" id="permCarrosselImagensAtivo">
+                                <label for="permCarrosselImagensAtivo">Habilitar Módulo</label>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button class="btn btn-success" onclick="salvarPermissoes()" style="width: 100%; padding: 14px;"><i class="fa-solid fa-floppy-disk"></i> Salvar Permissões de Acesso</button>
                 </div>
             </div>
@@ -1535,6 +1558,12 @@
                         document.getElementById('permImagensServicosIcone').value = p.imagens_servicos?.icone || 'fa-images';
                         document.getElementById('permImagensServicosDescricao').value = p.imagens_servicos?.descricao || '';
                         document.getElementById('permImagensServicosAtivo').checked = p.imagens_servicos?.ativo === true;
+
+                        // Carrossel de Imagens
+                        document.getElementById('permCarrosselImagensTitulo').value = p.carrossel_imagens?.titulo || '';
+                        document.getElementById('permCarrosselImagensIcone').value = p.carrossel_imagens?.icone || 'fa-images';
+                        document.getElementById('permCarrosselImagensDescricao').value = p.carrossel_imagens?.descricao || '';
+                        document.getElementById('permCarrosselImagensAtivo').checked = p.carrossel_imagens?.ativo === true;
                         
                         // Lógica de exibição com base no site_id
                         const usr = usuarios.find(u => u.id == usuarioId);
@@ -1607,6 +1636,12 @@
                     icone: document.getElementById('permImagensServicosIcone').value,
                     descricao: document.getElementById('permImagensServicosDescricao').value,
                     ativo: document.getElementById('permImagensServicosAtivo').checked
+                },
+                carrossel_imagens: {
+                    titulo: document.getElementById('permCarrosselImagensTitulo').value,
+                    icone: document.getElementById('permCarrosselImagensIcone').value,
+                    descricao: document.getElementById('permCarrosselImagensDescricao').value,
+                    ativo: document.getElementById('permCarrosselImagensAtivo').checked
                 }
             };
             

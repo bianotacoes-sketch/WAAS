@@ -158,6 +158,68 @@ def run_migration():
             cursor.execute("ALTER TABLE TESTE.EMPRESA ADD SITE_ID INT NULL;")
             conn.commit()
 
+        # Criar ou atualizar tabela teste.buffets
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = 'teste' AND TABLE_NAME = 'buffets'
+        """)
+        if cursor.fetchone()[0] == 0:
+            print("Criando tabela teste.buffets...")
+            cursor.execute("""
+            CREATE TABLE teste.buffets (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                site_id INT,
+                empresa_id INT,
+                nome_cliente NVARCHAR(255),
+                prazo DATE,
+                servico_id INT,
+                observacoes NVARCHAR(MAX)
+            );
+            """)
+            conn.commit()
+        else:
+            print("Atualizando colunas da tabela teste.buffets...")
+            cursor.execute("ALTER TABLE teste.buffets ALTER COLUMN observacoes NVARCHAR(MAX) NULL;")
+            cursor.execute("ALTER TABLE teste.buffets ALTER COLUMN nome_cliente NVARCHAR(255) NULL;")
+            conn.commit()
+
+        # Verificar se a coluna CARROSSEL_IMAGENS já existe em TESTE.USUARIOS
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = 'TESTE' AND TABLE_NAME = 'USUARIOS' AND COLUMN_NAME = 'CARROSSEL_IMAGENS'
+        """)
+        
+        existe_carrossel_perm = cursor.fetchone()[0] > 0
+        
+        if not existe_carrossel_perm:
+            print("Adicionando coluna CARROSSEL_IMAGENS à tabela TESTE.USUARIOS...")
+            cursor.execute("ALTER TABLE TESTE.USUARIOS ADD CARROSSEL_IMAGENS NVARCHAR(MAX) NULL;")
+            conn.commit()
+            print("Coluna CARROSSEL_IMAGENS adicionada com sucesso!")
+        else:
+            print("A coluna CARROSSEL_IMAGENS já existe na tabela TESTE.USUARIOS.")
+
+        # Criar tabela teste.carrossel
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = 'teste' AND TABLE_NAME = 'carrossel'
+        """)
+        if cursor.fetchone()[0] == 0:
+            print("Criando tabela teste.carrossel...")
+            cursor.execute("""
+            CREATE TABLE teste.carrossel (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                empresa_id INT,
+                site_id INT,
+                imagem1 VARBINARY(MAX), imagem2 VARBINARY(MAX), imagem3 VARBINARY(MAX), imagem4 VARBINARY(MAX), imagem5 VARBINARY(MAX),
+                imagem6 VARBINARY(MAX), imagem7 VARBINARY(MAX), imagem8 VARBINARY(MAX), imagem9 VARBINARY(MAX), imagem10 VARBINARY(MAX)
+            );
+            """)
+            conn.commit()
+            print("Tabela teste.carrossel criada com sucesso!")
+        else:
+            print("A tabela teste.carrossel já existe.")
+
         conn.close()
         return True
     except Exception as e:

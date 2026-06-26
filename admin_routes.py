@@ -90,6 +90,7 @@ def dashboard():
                                   personalizar_aparencia=permissoes.get('personalizar_aparencia', {}),
                                   gerenciar_ofertas=permissoes.get('gerenciar_ofertas', {}),
                                   imagens_servicos=permissoes.get('imagens_servicos', {}),
+                                  carrossel_imagens=permissoes.get('carrossel_imagens', {}),
                                   cores=cliente,
                                   cliente=cliente)
 
@@ -1294,3 +1295,72 @@ def admin_api_buffet():
             
         resultado = AdminModel.excluir_entrega(entrega_id)
         return jsonify({'sucesso': resultado})
+
+@admin_bp.route('/carrossel')
+def carrossel():
+    if 'admin_id' not in session:
+        return redirect(url_for('admin.login'))
+        
+    permissoes = AdminModel.buscar_permissoes_usuario(session['admin_id'])
+    if not permissoes.get('carrossel_imagens', {}).get('ativo', False):
+        return redirect(url_for('admin.dashboard'))
+        
+    cliente = {
+        'nome_fantasia': session.get('cliente_nome', session['admin_nome']),
+        'cor_primaria': session.get('cliente_cor_primaria', '#667eea'),
+        'cor_secundaria': session.get('cliente_cor_secundaria', '#764ba2'),
+        'cor_terciaria': session.get('cliente_cor_terciaria', '#48bb78'),
+        'logo_url': session.get('cliente_logo_url'),
+        'whatsapp': session.get('cliente_whatsapp'),
+        'url_amigavel': session.get('cliente_url')
+    }
+    
+    return render_template("admin_carrossel.html", 
+                           admin_nome=session['admin_nome'],
+                           cores=cliente,
+                           cliente=cliente)
+
+@admin_bp.route('/api/carrossel/imagens', methods=['POST'])
+def api_upload_imagens_carrossel():
+    if 'admin_id' not in session:
+        return jsonify({'erro': 'Não autorizado'}), 401
+        
+    empresa_id = session.get('empresa_id', 1)
+    site_id = session.get('site_id', 1)
+    
+    arquivos_binarios = []
+    
+    # Process up to 10 files
+    for i in range(1, 11):
+        file_key = f'imagem{i}'
+        if file_key in request.files:
+            file = request.files[file_key]
+            if file and file.filename != '':
+                arquivos_binarios.append(file.read())
+            else:
+                break
+        else:
+            break
+            
+    if AdminModel.salvar_imagens_carrossel(empresa_id, site_id, arquivos_binarios):
+        return jsonify({'sucesso': True})
+    return jsonify({'sucesso': False, 'erro': 'Erro ao salvar imagens'})
+
+@admin_bp.route('/api/carrossel/imagens/listar', methods=['GET'])
+def api_listar_imagens_carrossel():
+    if 'admin_id' not in session:
+        return jsonify({'erro': 'Não autorizado'}), 401
+    empresa_id = session.get('empresa_id', 1)
+    site_id = session.get('site_id', 1)
+    
+    indices = AdminModel.listar_id_imagens_carrossel(empresa_id, site_id)
+    return jsonify({'sucesso': True, 'imagens_ids': indices})
+
+@admin_bp.route('/api/carrossel/imagens/<int:indice_imagem>', methods=['DELETE'])
+def api_excluir_imagem_carrossel(indice_imagem):
+    if 'admin_id' not in session:
+        return jsonify({'erro': 'Não autorizado'}), 401
+    empresa_id = session.get('empresa_id', 1)
+    site_id = session.get('site_id', 1)
+    resultado = AdminModel.excluir_imagem_carrossel(empresa_id, site_id, indice_imagem)
+    return jsonify({'sucesso': resultado})

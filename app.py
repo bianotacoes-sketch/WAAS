@@ -103,6 +103,9 @@ SUSPENSION_TEMPLATE = """
 
 def obter_usuario_id_atual():
     cliente_atual = session.get('cliente_atual')
+    if cliente_atual and cliente_atual.get('usuario_id'):
+        return cliente_atual.get('usuario_id')
+        
     if not cliente_atual:
         empresa_id, site_id = 1, 1
     else:
@@ -147,18 +150,24 @@ def home():
         cliente = AdminModel.buscar_dados_cliente(1)
         if cliente:
             layout_config = merge_layout_config(cliente.get('layout_config'))
-                      # Buscar aparencia_config para o cliente padrão
+                      # Buscar aparencia_config e carrossel para o cliente padrão
             aparencia_config = {}
+            carrossel_imagens_ids = []
             try:
                 conn = get_db_connection()
                 cursor = conn.cursor()
-                cursor.execute("SELECT PERSONALIZAR_APARENCIA FROM TESTE.USUARIOS WHERE CLIENTE_ID = 1")
+                cursor.execute("SELECT PERSONALIZAR_APARENCIA, CARROSSEL_IMAGENS FROM TESTE.USUARIOS WHERE CLIENTE_ID = 1")
                 row = cursor.fetchone()
                 conn.close()
-                if row and row[0]:
-                    aparencia_config = json.loads(row[0])
+                if row:
+                    if row[0]:
+                        aparencia_config = json.loads(row[0])
+                    if row[1]:
+                        carrossel_config = json.loads(row[1])
+                        if carrossel_config.get('ativo', False):
+                            carrossel_imagens_ids = AdminModel.listar_id_imagens_carrossel(1, cliente.get('site_id', 1))
             except Exception as db_err:
-                print(f"Erro ao buscar aparencia_config: {db_err}")
+                print(f"Erro ao buscar aparencia_config/carrossel: {db_err}")
                 
             from models import AdminModel
             if AdminModel.verificar_existe_logo(1, 1):
@@ -166,7 +175,6 @@ def home():
             else:
                 logo_url = cliente['logo_url']
 
-            # Salvar na sessão qual cliente está sendo acessado
             session['cliente_atual'] = {
                 'id': cliente['id'],
                 'nome': cliente['nome_fantasia'],
@@ -177,8 +185,9 @@ def home():
                 'whatsapp': cliente['whatsapp'],
                 'url_amigavel': cliente['url_amigavel'],
                 'empresa_id': 1,
-                'site_id': 1,
-                'layout_config': layout_config
+                'site_id': cliente.get('site_id', 1),
+                'layout_config': layout_config,
+                'usuario_id': cliente.get('usuario_id')
             }
 
             return render_template('cliente_home.html', 
@@ -190,10 +199,12 @@ def home():
                                    layout_config=layout_config,
                                    titulo_site=aparencia_config.get('titulo_site', ''),
                                    corpo_site=aparencia_config.get('corpo_site', ''),
-                                   aparencia_config=aparencia_config)
+                                   aparencia_config=aparencia_config,
+                                   site_id=cliente.get('site_id', 1),
+                                   carrossel_imagens_ids=carrossel_imagens_ids)
     except Exception as e:
         print(f"Erro ao carregar home padrão: {e}")
-    return render_template('cliente_home.html', layout_config={}, aparencia_config={})
+    return render_template('cliente_home.html', layout_config={}, aparencia_config={}, site_id=1)
 
 @app.route('/agendamento')
 def agendamento():
@@ -447,6 +458,23 @@ def renderizar_logo(empresa_id, site_id):
         print(f"Erro ao renderizar logo: {e}")
         return "Internal error", 500
 
+@app.route('/img/carrossel/<int:empresa_id>/<int:site_id>/<int:indice>')
+def renderizar_imagem_carrossel(empresa_id, site_id, indice):
+    try:
+        from models import AdminModel
+        binario = AdminModel.buscar_imagem_carrossel(empresa_id, site_id, indice)
+        if binario:
+            return send_file(
+                io.BytesIO(binario),
+                mimetype='image/jpeg',
+                as_attachment=False,
+                download_name=f'carrossel_{empresa_id}_{site_id}_{indice}.jpg'
+            )
+        return "Not found", 404
+    except Exception as e:
+        print(f"Erro ao renderizar imagem do carrossel: {e}")
+        return "Internal error", 500
+
 # ==================== ROTAS PARA URL AMIGÁVEL ====================
 @app.route('/<string:url_cliente>')
 def home_cliente_url(url_cliente):
@@ -458,7 +486,7 @@ def home_cliente_url(url_cliente):
             SELECT C.ID, C.NOME_FANTASIA, C.COR_PRIMARIA, C.COR_SECUNDARIA, C.COR_TERCIARIA,
                    C.LOGO_URL, C.WHATSAPP_NUMERO, C.URL_AMIGAVEL,
                    U.EMPRESA_ID, U.SITE_ID, C.LAYOUT_CONFIG, U.PERSONALIZAR_APARENCIA, U.ATIVO,
-                   E.ENDERECO
+                   E.ENDERECO, C.USUARIO_ID, U.CARROSSEL_IMAGENS
             FROM TESTE.CLIENTES C
             JOIN TESTE.USUARIOS U ON C.USUARIO_ID = U.ID
             LEFT JOIN TESTE.EMPRESA E ON U.EMPRESA_ID = E.ID
@@ -496,6 +524,15 @@ def home_cliente_url(url_cliente):
                 logo_url = f"/img/logo/{empresa_id}/{site_id}"
             else:
                 logo_url = cliente[5]
+                
+            carrossel_imagens_ids = []
+            if len(cliente) > 15 and cliente[15]:
+                try:
+                    carrossel_config = json.loads(cliente[15])
+                    if carrossel_config.get('ativo', False):
+                        carrossel_imagens_ids = AdminModel.listar_id_imagens_carrossel(empresa_id, site_id)
+                except Exception as e:
+                    print(f"Erro ao parsear carrossel_imagens: {e}")
  
             # Salvar na sessão qual cliente está sendo acessado
             session['cliente_atual'] = {
@@ -510,7 +547,8 @@ def home_cliente_url(url_cliente):
                 'empresa_id': empresa_id,
                 'site_id': site_id,
                 'layout_config': layout_config,
-                'empresa_endereco': endereco
+                'empresa_endereco': endereco,
+                'usuario_id': cliente[14] if len(cliente) > 14 else None
             }
             
             # Se o site_id for 4 (Imobiliária), renderiza o template da imobiliária
@@ -523,7 +561,10 @@ def home_cliente_url(url_cliente):
                                        logo_url=logo_url,
                                        layout_config=layout_config,
                                        titulo_site=titulo_site,
-                                       corpo_site=corpo_site)
+                                       corpo_site=corpo_site,
+                                       carrossel_imagens_ids=carrossel_imagens_ids,
+                                       empresa_id=empresa_id,
+                                       site_id=site_id)
             
             return render_template('cliente_home.html', 
                                    cliente_nome=cliente[1],
@@ -535,7 +576,10 @@ def home_cliente_url(url_cliente):
                                    titulo_site=titulo_site,
                                    corpo_site=corpo_site,
                                    aparencia_config=aparencia_config,
-                                   empresa_endereco=endereco)
+                                   empresa_endereco=endereco,
+                                   site_id=site_id,
+                                   carrossel_imagens_ids=carrossel_imagens_ids,
+                                   empresa_id=empresa_id)
         
         # Se não encontrar, vai para o padrão
         return render_template('cliente_home.html', 
@@ -547,7 +591,9 @@ def home_cliente_url(url_cliente):
                                layout_config={},
                                titulo_site='',
                                corpo_site='',
-                               aparencia_config={})
+                               aparencia_config={},
+                               site_id=1,
+                               carrossel_imagens_ids=[])
     except Exception as e:
         print(f"Erro ao carregar cliente: {e}")
         return render_template('cliente_home.html', 
@@ -559,7 +605,8 @@ def home_cliente_url(url_cliente):
                                layout_config={},
                                titulo_site='',
                                corpo_site='',
-                               aparencia_config={})
+                               aparencia_config={},
+                               site_id=1)
 
 @app.route('/<string:url_cliente>/agendamento')
 def agendamento_cliente_url(url_cliente):

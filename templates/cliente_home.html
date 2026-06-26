@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% if site_id == 5 %}🎂{% elif site_id == 4 %}🏠{% else %}✂️{% endif %}</text></svg>">
     <title>{{ cliente_nome | default('Agendamento Online') }} | WAAS</title>
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -975,6 +976,112 @@
             transform: translateY(-2px);
             box-shadow: var(--shadow-sm);
         }
+
+        /* Carousel Section Styles */
+        .carousel-section {
+            margin-bottom: 40px;
+            margin-top: 20px;
+        }
+
+        .hero-carousel-container {
+            position: relative;
+            width: 100%;
+            height: 450px;
+            border-radius: {{ layout_config.border_radius_card | default('24px') }};
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+        }
+
+        .hero-carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .hero-carousel-slide.active {
+            opacity: 1;
+        }
+
+        .carousel-control {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            z-index: 3;
+        }
+
+        .carousel-control:hover {
+            background: var(--primary);
+            color: #000;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .carousel-control.prev {
+            left: 24px;
+        }
+
+        .carousel-control.next {
+            right: 24px;
+        }
+
+        .carousel-indicators {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 3;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 8px 16px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .carousel-dot.active {
+            background: var(--primary);
+            transform: scale(1.25);
+        }
+
+        @media (max-width: 768px) {
+            .hero-carousel-container {
+                height: 280px;
+            }
+            .carousel-control {
+                width: 38px;
+                height: 38px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -985,7 +1092,16 @@
                     <img src="{{ logo_url }}" class="logo-img" alt="Logo">
                 {% else %}
                     <a href="{% if session.get('cliente_atual', {}).get('url_amigavel') %}/{{ session.get('cliente_atual', {}).get('url_amigavel') }}{% else %}/{% endif %}" class="logo">
-                        <span class="logo-text">{{ cliente_nome | default('Salão de Beleza') }}<span class="dot">.</span></span>
+                        <span class="logo-text">
+                            {% if site_id == 5 %}
+                                <i class="fa-solid fa-cake-candles" style="color: var(--primary); margin-right: 4px;"></i>
+                            {% elif site_id == 4 %}
+                                <i class="fa-solid fa-house" style="color: var(--primary); margin-right: 4px;"></i>
+                            {% else %}
+                                <i class="fa-solid fa-scissors" style="color: var(--primary); margin-right: 4px;"></i>
+                            {% endif %}
+                            {{ cliente_nome | default('Agendamento Online') }}<span class="dot">.</span>
+                        </span>
                     </a>
                 {% endif %}
             </div>
@@ -1000,19 +1116,65 @@
     
     <main>
         <section class="container hero-section">
-
-            <h1>{{ titulo_site | default('Transforme seu Visual no <br><span class="highlight">' ~ (cliente_nome | default('Salão de Beleza')) ~ '</span>', true) | safe }}</h1>
-            <p>{{ corpo_site | default('Profissionais experientes, ambiente moderno e serviços de alta qualidade para elevar sua autoestima. Escolha o serviço ideal e garanta o seu horário agora mesmo!', true) }}</p>
-            <div class="hero-btns">
-                <a href="#servicos" class="btn btn-primary"><i class="fa-regular fa-calendar-check"></i> Agende o seu Serviço</a>
-                <button class="btn btn-outline" onclick="abrirGaleriaServicos()"><i class="fa-solid fa-images"></i> Veja Nossos Serviços</button>
+            <div class="hero-content-wrapper" style="text-shadow: none;">
+                {% if site_id == 5 %}
+                    <h1>{{ titulo_site | default('Celebre seus Melhores Momentos no <br><span class="highlight">' ~ (cliente_nome | default('Buffet')) ~ '</span>', true) | safe }}</h1>
+                    <p>{{ corpo_site | default('O buffet perfeito para a sua festa. Comida deliciosa, decoração sob medida, brinquedos divertidos e uma equipe dedicada para tornar seu evento inesquecível. Reserve sua data agora mesmo!', true) }}</p>
+                    <div class="hero-btns">
+                        <a href="#servicos" class="btn btn-primary"><i class="fa-regular fa-calendar-check"></i> Escolher Pacote / Serviço</a>
+                        <button class="btn btn-outline" onclick="abrirGaleriaServicos()"><i class="fa-solid fa-images"></i> Ver Fotos dos Pacotes</button>
+                    </div>
+                {% elif site_id == 4 %}
+                    <h1>{{ titulo_site | default('Encontre o Imóvel dos seus Sonhos com a <br><span class="highlight">' ~ (cliente_nome | default('Imobiliária')) ~ '</span>', true) | safe }}</h1>
+                    <p>{{ corpo_site | default('Os melhores imóveis, atendimento personalizado e assessoria completa para realizar o seu sonho da casa própria ou comercial. Entre em contato ou agende uma visita agora mesmo!', true) }}</p>
+                    <div class="hero-btns">
+                        <a href="#servicos" class="btn btn-primary"><i class="fa-regular fa-calendar-check"></i> Conhecer Ofertas</a>
+                        <button class="btn btn-outline" onclick="abrirGaleriaServicos()"><i class="fa-solid fa-images"></i> Galeria de Fotos</button>
+                    </div>
+                {% else %}
+                    <h1>{{ titulo_site | default('Transforme seu Visual no <br><span class="highlight">' ~ (cliente_nome | default('Salão de Beleza')) ~ '</span>', true) | safe }}</h1>
+                    <p>{{ corpo_site | default('Profissionais experientes, ambiente moderno e serviços de alta qualidade para elevar sua autoestima. Escolha o serviço ideal e garanta o seu horário agora mesmo!', true) }}</p>
+                    <div class="hero-btns">
+                        <a href="#servicos" class="btn btn-primary"><i class="fa-regular fa-calendar-check"></i> Agende o seu Serviço</a>
+                        <button class="btn btn-outline" onclick="abrirGaleriaServicos()"><i class="fa-solid fa-images"></i> Veja Nossos Serviços</button>
+                    </div>
+                {% endif %}
             </div>
         </section>
+
+        {% if carrossel_imagens_ids %}
+            <!-- Carousel Section -->
+            <section class="container carousel-section">
+                <div class="hero-carousel-container">
+                    {% for img_idx in carrossel_imagens_ids %}
+                        <div class="hero-carousel-slide {% if loop.first %}active{% endif %}" style="background-image: url('/img/carrossel/{{ empresa_id }}/{{ site_id }}/{{ img_idx }}');"></div>
+                    {% endfor %}
+                    <!-- Carousel controls if > 1 image -->
+                    {% if carrossel_imagens_ids | length > 1 %}
+                        <button class="carousel-control prev" onclick="mudarSlideHero(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="carousel-control next" onclick="mudarSlideHero(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                        <div class="carousel-indicators">
+                            {% for img_idx in carrossel_imagens_ids %}
+                                <span class="carousel-dot {% if loop.first %}active{% endif %}" onclick="irParaSlideHero({{ loop.index0 }})"></span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        {% endif %}
         
         <section id="servicos" class="container services-section">
             <div class="section-header">
-                <h2>Agende o seu Serviço</h2>
-                <p>Clique nos ícones para agendar seu horário</p>
+                {% if site_id == 5 %}
+                    <h2>Nossos Serviços e Pacotes</h2>
+                    <p>Veja fotos dos nossos serviços e entre em contato pelo WhatsApp se interessar, será um prazer te atender</p>
+                {% elif site_id == 4 %}
+                    <h2>Serviços Disponíveis</h2>
+                    <p>Escolha um serviço para iniciar seu atendimento</p>
+                {% else %}
+                    <h2>Nossos Serviços</h2>
+                    <p>Selecione um serviço para agendar seu horário</p>
+                {% endif %}
             </div>
             <div class="services-grid" id="servicos-grid">
                 <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Carregando catálogo de serviços...</div>
@@ -1119,7 +1281,13 @@
         <div class="footer-content">
             <div class="footer-brand">
                 <h3>{{ cliente_nome | default('Salão de Beleza') }}.</h3>
-                <p>Estilo e sofisticação para o seu visual.</p>
+                {% if site_id == 5 %}
+                    <p>Celebrando seus melhores momentos com você.</p>
+                {% elif site_id == 4 %}
+                    <p>O imóvel dos seus sonhos está aqui.</p>
+                {% else %}
+                    <p>Estilo e sofisticação para o seu visual.</p>
+                {% endif %}
             </div>
         </div>
         <div class="footer-bottom">
@@ -1180,7 +1348,10 @@
                 'Rosto': 'fa-spa',
                 'Mao': 'fa-hand-sparkles',
                 'Corpo': 'fa-leaf',
-                'Cabelo': 'fa-scissors'
+                'Cabelo': 'fa-scissors',
+                'Festa': 'fa-champagne-glasses',
+                'Comida': 'fa-utensils',
+                'Bolo': 'fa-cake-candles'
             };
 
             const iconsPorServico = {
@@ -1199,7 +1370,7 @@
                 if (nomeLower.includes('manicure') || nomeLower.includes('unha')) return iconsPorServico.manicure;
                 if (nomeLower.includes('tratamento') || nomeLower.includes('hidratação')) return iconsPorServico.tratamento;
                 if (nomeLower.includes('barba')) return iconsPorServico.barba;
-                return iconsPorServico.default;
+                return globalSiteId === 5 ? 'fa-utensils' : 'fa-scissors';
             }
             
             servicos.forEach(servico => {
@@ -1207,7 +1378,16 @@
                 const iconClass = iconeMap[servicoObj.icone] || getIconParaServico(servicoObj.nome);
                 const card = document.createElement('div');
                 card.className = 'service-card';
-                card.onclick = () => agendarServico(servicoObj);
+                if (globalSiteId === 5) {
+                    card.onclick = () => {
+                        abrirGaleriaServicos();
+                        if (servicoObj.imagens_ids && servicoObj.imagens_ids.length > 0) {
+                            iniciarSlideshow(servicoObj);
+                        }
+                    };
+                } else {
+                    card.onclick = () => agendarServico(servicoObj);
+                }
                 
                 let genderBadgeHtml = '';
                 if (servicoObj.genero === 'F') {
@@ -1215,6 +1395,8 @@
                 } else if (servicoObj.genero === 'M') {
                     genderBadgeHtml = `<div class="gender-badge masculino" title="Público Masculino"><i class="fa-solid fa-mars"></i></div>`;
                 }
+
+                const duracaoHtml = (globalSiteId === 5 || !servicoObj.duracao) ? '' : `<span class="service-duracao"><i class="fa-regular fa-clock"></i> ${servicoObj.duracao} min</span>`;
 
                 card.innerHTML = `
                     <div class="icon-box">
@@ -1225,7 +1407,7 @@
                     <p class="service-desc">${servicoObj.descricao || getDescricaoPadrao(servicoObj.nome)}</p>
                     <div class="service-footer">
                         <span class="service-preco">R$ ${servicoObj.valor.toFixed(2)}</span>
-                        <span class="service-duracao"><i class="fa-regular fa-clock"></i> ${servicoObj.duracao} min</span>
+                        ${duracaoHtml}
                     </div>
                 `;
                 container.appendChild(card);
@@ -1234,6 +1416,12 @@
         
         function getDescricaoPadrao(nome) {
             const nomeLower = nome.toLowerCase();
+            if (globalSiteId === 5) {
+                if (nomeLower.includes('bolo')) return 'Delicioso bolo artístico sob encomenda';
+                if (nomeLower.includes('salgad')) return 'Variedade de salgados quentinhos e saborosos';
+                if (nomeLower.includes('festa') || nomeLower.includes('combo')) return 'Pacote completo para a sua celebração ser inesquecível';
+                return 'Serviço de buffet profissional para o seu evento';
+            }
             if (nomeLower.includes('corte')) return 'Modelagem exclusiva e acabamento personalizado';
             if (nomeLower.includes('color')) return 'Tinturas e mechas com produtos de alta qualidade';
             if (nomeLower.includes('manicure')) return 'Manicure completa e cuidados especiais com as unhas';
@@ -1454,6 +1642,53 @@
             }
             exibirImagemSlideshow();
         }
+        
+        // --- HERO CAROUSEL LOGIC ---
+        let currentHeroSlide = 0;
+        const heroSlides = document.querySelectorAll('.hero-carousel-slide');
+        const heroDots = document.querySelectorAll('.carousel-dot');
+        let heroCarouselInterval = null;
+
+        function mostrarSlideHero(index) {
+            if (!heroSlides.length) return;
+            heroSlides[currentHeroSlide].classList.remove('active');
+            if (heroDots.length) heroDots[currentHeroSlide].classList.remove('active');
+            
+            currentHeroSlide = (index + heroSlides.length) % heroSlides.length;
+            
+            heroSlides[currentHeroSlide].classList.add('active');
+            if (heroDots.length) heroDots[currentHeroSlide].classList.add('active');
+        }
+
+        function mudarSlideHero(direcao) {
+            mostrarSlideHero(currentHeroSlide + direcao);
+            resetHeroCarouselInterval();
+        }
+
+        function irParaSlideHero(index) {
+            mostrarSlideHero(index);
+            resetHeroCarouselInterval();
+        }
+
+        function iniciarHeroCarouselAuto() {
+            if (heroSlides.length > 1) {
+                heroCarouselInterval = setInterval(() => {
+                    mostrarSlideHero(currentHeroSlide + 1);
+                }, 5000);
+            }
+        }
+
+        function resetHeroCarouselInterval() {
+            if (heroCarouselInterval) {
+                clearInterval(heroCarouselInterval);
+                iniciarHeroCarouselAuto();
+            }
+        }
+
+        // Initialize hero carousel if present
+        document.addEventListener('DOMContentLoaded', () => {
+            iniciarHeroCarouselAuto();
+        });
         
         // Inicializar
         carregarServicos();

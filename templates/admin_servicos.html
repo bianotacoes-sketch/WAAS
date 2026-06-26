@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% if session.get('site_id') == 5 %}🎂{% elif session.get('site_id') == 4 %}🏠{% else %}✂️{% endif %}</text></svg>">
     <title>Gerenciar Serviços | {{ cliente.nome_fantasia }}</title>
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -442,14 +443,19 @@
         }
     </style>
 </head>
-<body>
-    <header>
+<body>    <header>
         <div class="brand">
             {% if cliente.logo_url %}
                 <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
             {% else %}
                 <div class="logo-text">
-                    <i class="fa-solid fa-scissors"></i>
+                    {% if session.get('site_id') == 5 %}
+                        <i class="fa-solid fa-cake-candles"></i>
+                    {% elif session.get('site_id') == 4 %}
+                        <i class="fa-solid fa-house"></i>
+                    {% else %}
+                        <i class="fa-solid fa-scissors"></i>
+                    {% endif %}
                     <span>{{ cliente.nome_fantasia }}</span>
                 </div>
             {% endif %}
@@ -472,18 +478,25 @@
             <a href="/admin/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
         </div>
     </header>
-
+ 
     <div class="container">
         <div class="panel-title">
-            <i class="fa-solid fa-scissors"></i> Gerenciar Serviços do Estabelecimento
+            {% if session.get('site_id') == 5 %}
+                <i class="fa-solid fa-cake-candles"></i>
+            {% elif session.get('site_id') == 4 %}
+                <i class="fa-solid fa-house"></i>
+            {% else %}
+                <i class="fa-solid fa-scissors"></i>
+            {% endif %}
+            Gerenciar Serviços do Estabelecimento
         </div>
-
+ 
         <div class="card">
             <div class="card-title"><i class="fa-solid fa-plus"></i> Adicionar Novo Serviço</div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Nome do Serviço</label>
-                    <input type="text" id="servicoNome" placeholder="Ex: Corte de Cabelo Masculino">
+                    <input type="text" id="servicoNome" placeholder="{% if session.get('site_id') == 5 %}Ex: Buffet Completo Infantil{% else %}Ex: Corte de Cabelo Masculino{% endif %}">
                 </div>
                 {% if session.get('site_id') != 5 %}
                 <div class="form-group">

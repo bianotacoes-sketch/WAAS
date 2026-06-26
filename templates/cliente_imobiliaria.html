@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
     <title>{{ cliente_nome | default('Imobiliária') }} | WAAS</title>
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -690,6 +691,112 @@
             transform: scale(1.1);
             box-shadow: 0 0 10px var(--primary);
         }
+
+        /* Carousel Section Styles */
+        .carousel-section {
+            margin-bottom: 40px;
+            margin-top: 20px;
+        }
+
+        .hero-carousel-container {
+            position: relative;
+            width: 100%;
+            height: 450px;
+            border-radius: {{ layout_config.border_radius_card | default('24px') }};
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+        }
+
+        .hero-carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .hero-carousel-slide.active {
+            opacity: 1;
+        }
+
+        .carousel-control {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            z-index: 3;
+        }
+
+        .carousel-control:hover {
+            background: var(--primary);
+            color: #000;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .carousel-control.prev {
+            left: 24px;
+        }
+
+        .carousel-control.next {
+            right: 24px;
+        }
+
+        .carousel-indicators {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 3;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 8px 16px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .carousel-dot.active {
+            background: var(--primary);
+            transform: scale(1.25);
+        }
+
+        @media (max-width: 768px) {
+            .hero-carousel-container {
+                height: 280px;
+            }
+            .carousel-control {
+                width: 38px;
+                height: 38px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -714,12 +821,35 @@
     
     <main>
         <section class="container hero-section">
-            {% if layout_config.show_hero_badge is not defined or layout_config.show_hero_badge %}
-            <span class="badge">{{ layout_config.hero_badge_text | default('Oportunidades Únicas') }}</span>
-            {% endif %}
-            <h1>{{ titulo_site | default('Encontre o Imóvel dos Seus <span class="highlight">Sonhos</span>', true) | safe }}</h1>
-            <p>{{ corpo_site | default('Selecione as melhores ofertas de venda e locação de imóveis residenciais e comerciais. Conectamos você ao seu novo lar de forma rápida e segura.', true) }}</p>
+            <div class="hero-content-wrapper">
+                {% if layout_config.show_hero_badge is not defined or layout_config.show_hero_badge %}
+                <span class="badge">{{ layout_config.hero_badge_text | default('Oportunidades Únicas') }}</span>
+                {% endif %}
+                <h1>{{ titulo_site | default('Encontre o Imóvel dos Seus <span class="highlight">Sonhos</span>', true) | safe }}</h1>
+                <p>{{ corpo_site | default('Selecione as melhores ofertas de venda e locação de imóveis residenciais e comerciais. Conectamos você ao seu novo lar de forma rápida e segura.', true) }}</p>
+            </div>
         </section>
+
+        {% if carrossel_imagens_ids %}
+            <!-- Carousel Section -->
+            <section class="container carousel-section">
+                <div class="hero-carousel-container">
+                    {% for img_idx in carrossel_imagens_ids %}
+                        <div class="hero-carousel-slide {% if loop.first %}active{% endif %}" style="background-image: url('/img/carrossel/{{ empresa_id }}/{{ site_id }}/{{ img_idx }}');"></div>
+                    {% endfor %}
+                    <!-- Carousel controls if > 1 image -->
+                    {% if carrossel_imagens_ids | length > 1 %}
+                        <button class="carousel-control prev" onclick="mudarSlideHero(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="carousel-control next" onclick="mudarSlideHero(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                        <div class="carousel-indicators">
+                            {% for img_idx in carrossel_imagens_ids %}
+                                <span class="carousel-dot {% if loop.first %}active{% endif %}" onclick="irParaSlideHero({{ loop.index0 }})"></span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        {% endif %}
 
         <!-- Filtros -->
         <section class="container">
@@ -1157,6 +1287,53 @@
             if (e.key === 'ArrowLeft') navegarGaleria(-1);
             if (e.key === 'ArrowRight') navegarGaleria(1);
         }
+
+        // --- HERO CAROUSEL LOGIC ---
+        let currentHeroSlide = 0;
+        const heroSlides = document.querySelectorAll('.hero-carousel-slide');
+        const heroDots = document.querySelectorAll('.carousel-dot');
+        let heroCarouselInterval = null;
+
+        function mostrarSlideHero(index) {
+            if (!heroSlides.length) return;
+            heroSlides[currentHeroSlide].classList.remove('active');
+            if (heroDots.length) heroDots[currentHeroSlide].classList.remove('active');
+            
+            currentHeroSlide = (index + heroSlides.length) % heroSlides.length;
+            
+            heroSlides[currentHeroSlide].classList.add('active');
+            if (heroDots.length) heroDots[currentHeroSlide].classList.add('active');
+        }
+
+        function mudarSlideHero(direcao) {
+            mostrarSlideHero(currentHeroSlide + direcao);
+            resetHeroCarouselInterval();
+        }
+
+        function irParaSlideHero(index) {
+            mostrarSlideHero(index);
+            resetHeroCarouselInterval();
+        }
+
+        function iniciarHeroCarouselAuto() {
+            if (heroSlides.length > 1) {
+                heroCarouselInterval = setInterval(() => {
+                    mostrarSlideHero(currentHeroSlide + 1);
+                }, 5000);
+            }
+        }
+
+        function resetHeroCarouselInterval() {
+            if (heroCarouselInterval) {
+                clearInterval(heroCarouselInterval);
+                iniciarHeroCarouselAuto();
+            }
+        }
+
+        // Initialize hero carousel if present
+        document.addEventListener('DOMContentLoaded', () => {
+            iniciarHeroCarouselAuto();
+        });
     </script>
 
     <!-- Modal de Galeria de Fotos -->

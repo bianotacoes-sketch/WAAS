@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendar Horário | {{ cliente.nome_fantasia | default('Salão de Beleza') }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% if cliente.site_id == 5 %}🎂{% elif cliente.site_id == 4 %}🏠{% else %}✂️{% endif %}</text></svg>">
+    <title>
+        {% if cliente.site_id == 5 %}
+            Fazer Reserva / Pedido | {{ cliente.nome_fantasia | default('Buffet') }}
+        {% elif cliente.site_id == 4 %}
+            Agendar Visita | {{ cliente.nome_fantasia | default('Imobiliária') }}
+        {% else %}
+            Agendar Horário | {{ cliente.nome_fantasia | default('Salão de Beleza') }}
+        {% endif %}
+    </title>
     <!-- Google Fonts: Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -543,7 +552,16 @@
                     <img src="{{ cliente.logo_url }}" class="logo-img" alt="Logo">
                 {% else %}
                     <a href="{% if cliente.url_amigavel %}/{{ cliente.url_amigavel }}{% else %}/{% endif %}" class="logo">
-                        <span class="logo-text">{{ cliente.nome_fantasia | default('Salão de Beleza') }}<span class="dot">.</span></span>
+                        <span class="logo-text">
+                            {% if cliente.site_id == 5 %}
+                                <i class="fa-solid fa-cake-candles" style="color: var(--primary); margin-right: 4px;"></i>
+                            {% elif cliente.site_id == 4 %}
+                                <i class="fa-solid fa-house" style="color: var(--primary); margin-right: 4px;"></i>
+                            {% else %}
+                                <i class="fa-solid fa-scissors" style="color: var(--primary); margin-right: 4px;"></i>
+                            {% endif %}
+                            {{ cliente.nome_fantasia | default('Salão de Beleza') }}<span class="dot">.</span>
+                        </span>
                     </a>
                 {% endif %}
             </div>
@@ -555,7 +573,16 @@
     
     <div class="container">
         <div class="card">
-            <h2><i class="fa-regular fa-calendar-check"></i> Reserve seu Horário</h2>
+            <h2>
+                <i class="fa-regular fa-calendar-check"></i> 
+                {% if cliente.site_id == 5 %}
+                    Fazer Reserva / Pedido
+                {% elif cliente.site_id == 4 %}
+                    Agendar Visita
+                {% else %}
+                    Reserve seu Horário
+                {% endif %}
+            </h2>
             
             <div id="mensagem" class="mensagem"></div>
             
@@ -570,7 +597,16 @@
             </div>
             
             <div class="form-group">
-                <label for="servico"><i class="fa-solid fa-scissors"></i> Escolha o Serviço</label>
+                <label for="servico">
+                    {% if cliente.site_id == 5 %}
+                        <i class="fa-solid fa-cake-candles"></i>
+                    {% elif cliente.site_id == 4 %}
+                        <i class="fa-solid fa-house"></i>
+                    {% else %}
+                        <i class="fa-solid fa-scissors"></i>
+                    {% endif %}
+                    Escolha o Serviço
+                </label>
                 <select id="servico" onchange="calcularDuracao()">
                     <option value="">Selecione um serviço...</option>
                 </select>
@@ -668,7 +704,8 @@
                     servicos.forEach(servico => {
                         const option = document.createElement('option');
                         option.value = JSON.stringify(servico);
-                        option.textContent = `${servico.nome} - R$ ${servico.valor.toFixed(2)} (${servico.duracao} min)`;
+                        const duracaoText = ({{ cliente.site_id | default(1) }} === 5 || servico.duracao === 0) ? '' : ` (${servico.duracao} min)`;
+                        option.textContent = `${servico.nome} - R$ ${servico.valor.toFixed(2)}${duracaoText}`;
                         select.appendChild(option);
                     });
                     
@@ -762,12 +799,13 @@
             
             if (nome && telefone && servicoSelect.value && data && horario) {
                 const servico = JSON.parse(servicoSelect.value);
+                const duracaoHtml = ({{ cliente.site_id | default(1) }} === 5 || servico.duracao === 0) ? '' : `<p><span>Duração Estimada:</span> <strong>${servico.duracao} minutos</strong></p>`;
                 resumoDiv.innerHTML = `
                     <h3><i class="fa-solid fa-clipboard-list"></i> Detalhes da Reserva</h3>
                     <p><span>Cliente:</span> <strong>${nome}</strong></p>
                     <p><span>WhatsApp:</span> <strong>${telefone}</strong></p>
                     <p><span>Serviço:</span> <strong>${servico.nome}</strong></p>
-                    <p><span>Duração Estimada:</span> <strong>${servico.duracao} minutos</strong></p>
+                    ${duracaoHtml}
                     <p><span>Investimento:</span> <strong>R$ ${servico.valor.toFixed(2)}</strong></p>
                     <p><span>Data:</span> <strong>${new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p>
                     <p><span>Horário:</span> <strong>${horario}</strong></p>

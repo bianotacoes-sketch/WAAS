@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% if session.get('site_id') == 5 %}🎂{% elif session.get('site_id') == 4 %}🏠{% else %}✂️{% endif %}</text></svg>">
     <title>Painel Administrativo | {{ cliente.nome_fantasia }}</title>
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -316,7 +317,13 @@
             {% else %}
                 <div class="logo-text">
                     {% if nome_dashboard.get('icone') == '💇' or not nome_dashboard.get('icone') %}
-                        <i class="fa-solid fa-scissors"></i>
+                        {% if session.get('site_id') == 5 %}
+                            <i class="fa-solid fa-cake-candles"></i>
+                        {% elif session.get('site_id') == 4 %}
+                            <i class="fa-solid fa-house"></i>
+                        {% else %}
+                            <i class="fa-solid fa-scissors"></i>
+                        {% endif %}
                     {% else %}
                         <span class="logo-emoji">{{ nome_dashboard.get('icone') }}</span>
                     {% endif %}
@@ -337,7 +344,14 @@
                 
                 {% if gerenciar_servico.get('ativo', false) %}
                 <a href="/admin/servicos" class="nav-link">
-                    <i class="fa-solid fa-scissors"></i> {{ gerenciar_servico.get('titulo', 'Serviços') }}
+                    {% if session.get('site_id') == 5 %}
+                        <i class="fa-solid fa-cake-candles"></i>
+                    {% elif session.get('site_id') == 4 %}
+                        <i class="fa-solid fa-house"></i>
+                    {% else %}
+                        <i class="fa-solid fa-scissors"></i>
+                    {% endif %}
+                    {{ gerenciar_servico.get('titulo', 'Serviços') }}
                 </a>
                 {% endif %}
                 
@@ -373,6 +387,12 @@
                 {% if imagens_servicos.get('ativo', false) %}
                 <a href="/admin/servicos/imagens" class="nav-link">
                     <i class="fa-solid {{ imagens_servicos.get('icone', 'fa-images') }}"></i> {{ imagens_servicos.get('titulo', 'Imagens') }}
+                </a>
+                {% endif %}
+                
+                {% if carrossel_imagens.get('ativo', false) %}
+                <a href="/admin/carrossel" class="nav-link">
+                    <i class="fa-solid {{ carrossel_imagens.get('icone', 'fa-images') }}"></i> {{ carrossel_imagens.get('titulo', 'Carrossel') }}
                 </a>
                 {% endif %}
             </div>
@@ -413,7 +433,13 @@
             <div class="feature-card" onclick="window.location.href='/admin/servicos'">
                 <div class="card-icon">
                     {% if gerenciar_servico.get('icone') == '💇' or not gerenciar_servico.get('icone') %}
-                        <i class="fa-solid fa-scissors"></i>
+                        {% if session.get('site_id') == 5 %}
+                            <i class="fa-solid fa-cake-candles"></i>
+                        {% elif session.get('site_id') == 4 %}
+                            <i class="fa-solid fa-house"></i>
+                        {% else %}
+                            <i class="fa-solid fa-scissors"></i>
+                        {% endif %}
                     {% else %}
                         {{ gerenciar_servico.get('icone') }}
                     {% endif %}
@@ -494,6 +520,17 @@
                 <h3>{{ imagens_servicos.get('titulo', 'Imagens dos Serviços') }}</h3>
                 <p>{{ imagens_servicos.get('descricao', 'Adicione imagens e crie galerias visuais para apresentar o trabalho de cada um dos seus serviços.') }}</p>
                 <div class="card-btn">Gerenciar Imagens</div>
+            </div>
+            {% endif %}
+            
+            {% if carrossel_imagens.get('ativo', false) %}
+            <div class="feature-card" onclick="window.location.href='/admin/carrossel'">
+                <div class="card-icon">
+                    <i class="fa-solid {{ carrossel_imagens.get('icone', 'fa-images') }}"></i>
+                </div>
+                <h3>{{ carrossel_imagens.get('titulo', 'Carrossel de Imagens') }}</h3>
+                <p>{{ carrossel_imagens.get('descricao', 'Selecione e envie imagens que farão parte do carrossel na página inicial do seu site.') }}</p>
+                <div class="card-btn">Gerenciar Carrossel</div>
             </div>
             {% endif %}
         </div>
